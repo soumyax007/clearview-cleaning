@@ -1,0 +1,132 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: quotes
+    description: Quote request operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /quotes:
+    post:
+      operationId: createQuote
+      tags: [quotes]
+      summary: Submit a quote request
+      description: Saves a residential or commercial cleaning quote request.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteInput"
+      responses:
+        "201":
+          description: Quote request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          description: Invalid quote request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Unable to save quote request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    get:
+      operationId: listQuotes
+      tags: [quotes]
+      summary: List quote requests
+      description: Lists recent quote requests for simple administrative review.
+      responses:
+        "200":
+          description: Quote requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+        "500":
+          description: Unable to list quote requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        contact:
+          type: string
+        message:
+          type: string
+        mode:
+          type: string
+          enum: [residential, commercial]
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, name, contact, message, mode, createdAt]
+    QuoteInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+        contact:
+          type: string
+          minLength: 5
+          maxLength: 160
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+        mode:
+          type: string
+          enum: [residential, commercial]
+      required: [name, contact, message, mode]
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Clearview Cleaning Co."
+description = "A polished residential and commercial cleaning company website with audience-aware messaging, service information, FAQs, testimonials, and a working quote request form connected to the shared API."
+version = "1.0.0"
+id = "artifacts/clearview-cleaning"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24252
+
+[services.development]
+run = "pnpm --filter @workspace/clearview-cleaning run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clearview-cleaning", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clearview-cleaning/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24252"
+BASE_PATH = "/"
