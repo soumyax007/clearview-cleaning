@@ -68,6 +68,8 @@ nav.primary-nav a:hover::after{width:100%;}
 .btn-outline-light:hover{background:rgba(255,255,255,0.12);}
 .btn-gold{background:var(--gold);color:var(--navy-deep);}
 .btn-gold:hover{background:var(--gold-deep);color:#fff;}
+.btn-outline-navy{border-color:var(--navy);color:var(--navy);}
+.btn-outline-navy:hover{background:var(--navy);color:#fff;}
 
 /* mobile toggle */
 .menu-toggle{display:none;background:none;border:none;cursor:pointer;padding:6px;z-index:120;}

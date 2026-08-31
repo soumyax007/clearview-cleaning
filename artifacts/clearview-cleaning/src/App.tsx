@@ -548,9 +548,19 @@ function QuoteForm() {
       </div>
       {error && <p style={{ color: '#C1553F', fontSize: '13px', marginBottom: '12px' }} role="alert" data-testid="status-quote-error">{error}</p>}
       {success ? (
-        <div className="form-success" data-testid="status-quote-success">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
-          <span>Thanks, {name || 'there'} — we've received your request and will be in touch within one business day.</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="form-success" data-testid="status-quote-success">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+            <span>Thanks, {name || 'there'} — we've received your request and will be in touch within one business day.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSuccess(false)}
+            className="btn btn-outline-navy"
+            data-testid="button-submit-another"
+          >
+            Send another request
+          </button>
         </div>
       ) : (
         <button type="submit" className="btn btn-solid" disabled={createQuote.isPending} data-testid="button-submit-quote">
