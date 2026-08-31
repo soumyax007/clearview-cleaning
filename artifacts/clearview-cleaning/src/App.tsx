@@ -509,21 +509,36 @@ function QuoteForm() {
   const createQuote = useCreateQuote();
   const [mode, setMode] = useState<'residential' | 'commercial'>('residential');
   const [name, setName] = useState('');
-  const [contact, setContact] = useState('');
+  const [company, setCompany] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const resetForm = () => {
+    setName(''); setCompany(''); setEmail(''); setPhone(''); setMessage(''); setError('');
+  };
+
   const submit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (name.trim().length < 2) { setError('Please add your name so we know who to reply to.'); return; }
-    if (contact.trim().length < 5) { setError('Please add an email or phone number.'); return; }
+    if (mode === 'commercial' && company.trim().length < 2) { setError('Please add your company name.'); return; }
+    if (!email.trim().includes('@')) { setError('Please add a valid email address.'); return; }
     if (message.trim().length < 10) { setError('A few more details will help us prepare the right quote.'); return; }
     setError('');
+
+    // Build contact string: always email, append phone if provided
+    const contactStr = phone.trim() ? `${email.trim()} | ${phone.trim()}` : email.trim();
+    // Prepend company to message for business
+    const fullMessage = mode === 'commercial' && company.trim()
+      ? `Company: ${company.trim()}\n\n${message.trim()}`
+      : message.trim();
+
     createQuote.mutate(
-      { data: { name: name.trim(), contact: contact.trim(), message: message.trim(), mode } },
+      { data: { name: name.trim(), contact: contactStr, message: fullMessage, mode } },
       {
-        onSuccess: () => { setSuccess(true); setName(''); setContact(''); setMessage(''); },
+        onSuccess: () => { setSuccess(true); resetForm(); },
         onError: () => setError('We could not send that just now. Please try again or call us at (415) 555-0184.'),
       },
     );
@@ -550,23 +565,64 @@ function QuoteForm() {
           🏢 Business
         </button>
       </div>
+
+      {/* Name + Company (business only) */}
       <div className="form-row">
         <div className="field">
-          <label htmlFor="fName">Name</label>
-          <input type="text" id="fName" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" data-testid="input-quote-name" />
+          <label htmlFor="fName">Your name</label>
+          <input type="text" id="fName" value={name} onChange={(e) => setName(e.target.value)} placeholder="Jane or Jordan Lee" data-testid="input-quote-name" />
         </div>
-        <div className="field">
-          <label htmlFor="fPhone">Phone</label>
-          <input type="tel" id="fPhone" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="(415) 000-0000" data-testid="input-quote-contact" />
-        </div>
+        {mode === 'commercial' ? (
+          <div className="field">
+            <label htmlFor="fCompany">Company name</label>
+            <input type="text" id="fCompany" value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Acme Corp." data-testid="input-quote-company" />
+          </div>
+        ) : (
+          <div className="field">
+            <label htmlFor="fPhone">
+              Phone <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>(optional)</span>
+            </label>
+            <input type="tel" id="fPhone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(415) 000-0000" data-testid="input-quote-phone" />
+          </div>
+        )}
       </div>
+
+      {/* Email + Phone (business) */}
+      <div className="form-row">
+        <div className={`field${mode === 'residential' ? ' full' : ''}`}>
+          <label htmlFor="fEmail">Email address</label>
+          <input type="email" id="fEmail" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" data-testid="input-quote-email" />
+        </div>
+        {mode === 'commercial' && (
+          <div className="field">
+            <label htmlFor="fPhone">
+              Phone <span style={{ fontWeight: 400, color: 'var(--ink-soft)' }}>(optional)</span>
+            </label>
+            <input type="tel" id="fPhone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="(415) 000-0000" data-testid="input-quote-phone" />
+          </div>
+        )}
+      </div>
+
+      {/* Message */}
       <div className="form-row">
         <div className="field full">
-          <label htmlFor="fMessage">{mode === 'residential' ? 'Tell us about your home' : 'Tell us about your facility'}</label>
-          <textarea id="fMessage" value={message} onChange={(e) => setMessage(e.target.value)} placeholder={mode === 'residential' ? 'Square footage, rooms, how often you\'d like service...' : 'Building type, square footage, schedule needed...'} data-testid="input-quote-message" />
+          <label htmlFor="fMessage">
+            {mode === 'residential' ? 'Tell us about your home' : 'Tell us about your facility'}
+          </label>
+          <textarea
+            id="fMessage"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={mode === 'residential'
+              ? "Square footage, rooms, how often you'd like service..."
+              : 'Building type, square footage, cleaning schedule needed...'}
+            data-testid="input-quote-message"
+          />
         </div>
       </div>
+
       {error && <p style={{ color: '#C1553F', fontSize: '13px', marginBottom: '12px' }} role="alert" data-testid="status-quote-error">{error}</p>}
+
       {success ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="form-success" data-testid="status-quote-success">
