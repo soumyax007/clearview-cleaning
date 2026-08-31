@@ -507,6 +507,7 @@ function Testimonials() {
 /* ─── Quote Form ─── */
 function QuoteForm() {
   const createQuote = useCreateQuote();
+  const [mode, setMode] = useState<'residential' | 'commercial'>('residential');
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [message, setMessage] = useState('');
@@ -520,7 +521,7 @@ function QuoteForm() {
     if (message.trim().length < 10) { setError('A few more details will help us prepare the right quote.'); return; }
     setError('');
     createQuote.mutate(
-      { data: { name: name.trim(), contact: contact.trim(), message: message.trim(), mode: 'residential' } },
+      { data: { name: name.trim(), contact: contact.trim(), message: message.trim(), mode } },
       {
         onSuccess: () => { setSuccess(true); setName(''); setContact(''); setMessage(''); },
         onError: () => setError('We could not send that just now. Please try again or call us at (415) 555-0184.'),
@@ -530,6 +531,25 @@ function QuoteForm() {
 
   return (
     <form className="quote-form" id="quoteForm" onSubmit={submit} noValidate>
+      {/* Mode toggle */}
+      <div className="mode-toggle" role="group" aria-label="Service type">
+        <button
+          type="button"
+          className={`mode-btn${mode === 'residential' ? ' active' : ''}`}
+          onClick={() => setMode('residential')}
+          data-testid="button-quote-residential"
+        >
+          🏠 Home
+        </button>
+        <button
+          type="button"
+          className={`mode-btn${mode === 'commercial' ? ' active' : ''}`}
+          onClick={() => setMode('commercial')}
+          data-testid="button-quote-commercial"
+        >
+          🏢 Business
+        </button>
+      </div>
       <div className="form-row">
         <div className="field">
           <label htmlFor="fName">Name</label>
@@ -542,8 +562,8 @@ function QuoteForm() {
       </div>
       <div className="form-row">
         <div className="field full">
-          <label htmlFor="fMessage">Tell us about your space</label>
-          <textarea id="fMessage" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Home or office, square footage, how often you'd like service..." data-testid="input-quote-message" />
+          <label htmlFor="fMessage">{mode === 'residential' ? 'Tell us about your home' : 'Tell us about your facility'}</label>
+          <textarea id="fMessage" value={message} onChange={(e) => setMessage(e.target.value)} placeholder={mode === 'residential' ? 'Square footage, rooms, how often you\'d like service...' : 'Building type, square footage, schedule needed...'} data-testid="input-quote-message" />
         </div>
       </div>
       {error && <p style={{ color: '#C1553F', fontSize: '13px', marginBottom: '12px' }} role="alert" data-testid="status-quote-error">{error}</p>}
