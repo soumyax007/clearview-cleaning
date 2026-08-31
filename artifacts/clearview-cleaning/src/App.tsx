@@ -1,28 +1,13 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { useCreateQuote } from '@workspace/api-client-react';
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  BadgeCheck,
-  Building2,
-  Check,
-  CheckCircle2,
-  ChevronDown,
-  Clock3,
-  Droplets,
-  Home as HomeIcon,
-  Mail,
-  MapPin,
-  Menu,
-  PhoneCall,
-  ShieldCheck,
-  Sparkles,
-  Star,
-  Users,
-  X,
-} from 'lucide-react';
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useCreateQuote } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -30,197 +15,497 @@ import NotFound from '@/pages/not-found';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 const queryClient = new QueryClient();
-type Mode = 'residential' | 'commercial';
 
-const EASE = [0.22, 0.75, 0.25, 1] as const;
-
-const modeCopy = {
-  residential: {
-    label: 'Home care',
-    title: (
-      <>
-        Come home
-        <br />
-        to <span className="font-display-italic">clear</span>.
-      </>
-    ),
-    body: 'The kind of clean you feel before you see it. Steady, attentive care for the rooms your family actually lives in.',
-    prompt: 'Tell us about your home, your routine, and what you\u2019d love to hand off.',
-    services: ['Recurring home care', 'Deep cleans & resets', 'Move-in / move-out'],
-  },
-  commercial: {
-    label: 'Facility care',
-    title: (
-      <>
-        Standards you
-        <br />
-        can <span className="font-display-italic">verify</span>.
-      </>
-    ),
-    body: 'A workplace that is always presentation-ready, without another line on your facilities list. Clear scopes, steady crews, visible results.',
-    prompt: 'Tell us about your facility, your schedule, and the standard you need held.',
-    services: ['Office & workplace care', 'Retail & common areas', 'Post-construction clean'],
-  },
-} satisfies Record<Mode, { label: string; title: ReactNode; body: string; prompt: string; services: string[] }>;
-
-/** Reusable scroll-triggered reveal. Respects prefers-reduced-motion. */
-function Reveal({
-  children,
-  delay = 0,
-  className,
-  as = 'div',
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-  as?: 'div' | 'span';
-}) {
-  const reduceMotion = useReducedMotion();
-  const Comp = as === 'span' ? motion.span : motion.div;
+/* ─── Logo SVG (inline, matches HTML badge design) ─── */
+function LogoBadge({ size = 44 }: { size?: number }) {
+  const id = `ccs-${size}`;
   return (
-    <Comp
-      className={className}
-      initial={reduceMotion ? undefined : { opacity: 0, y: 26 }}
-      whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-72px' }}
-      transition={{ duration: 0.65, ease: EASE, delay }}
-    >
-      {children}
-    </Comp>
+    <svg width={size} height={size} viewBox="0 0 200 200" role="img" aria-label="Clearview Cleaning logo">
+      <defs>
+        <clipPath id={`clip-${id}`}><circle cx="100" cy="100" r="94" /></clipPath>
+        <linearGradient id={`sun-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#F3C36B" />
+          <stop offset="100%" stopColor="#C97A2E" />
+        </linearGradient>
+        <linearGradient id={`wave-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#2C6187" />
+          <stop offset="100%" stopColor="#4C88AC" />
+        </linearGradient>
+      </defs>
+      <circle cx="100" cy="100" r="97" fill="#FAF8F4" stroke="#12263F" strokeWidth="1.5" />
+      <g clipPath={`url(#clip-${id})`}>
+        <rect x="6" y="6" width="188" height="188" fill="#FAF8F4" />
+        <circle cx="100" cy="82" r="52" fill={`url(#sun-${id})`} />
+        <path d="M6,132 Q35,118 64,132 T122,132 T180,132 T194,128 V200 H6 Z" fill={`url(#wave-${id})`} opacity="0.95" />
+        <path d="M6,150 Q35,138 64,150 T122,150 T180,150 T194,146 V200 H6 Z" fill="#215072" opacity="0.9" />
+        <path d="M6,168 Q35,158 64,168 T122,168 T180,168 T194,165 V200 H6 Z" fill="#12263F" opacity="0.92" />
+      </g>
+      <circle cx="100" cy="100" r="94" fill="none" stroke="#12263F" strokeWidth="1" />
+      <text x="100" y="112" textAnchor="middle" fontFamily="Playball, cursive" fontSize="34" fill="#C1553F" transform="rotate(-6 100 112)">
+        Clearview
+      </text>
+    </svg>
   );
 }
 
-function Logo() {
-  return (
-    <a href="#top" className="focus-ring flex items-center gap-2.5" data-testid="link-logo">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--accent))]">
-        <Droplets size={18} strokeWidth={2.4} />
-      </span>
-      <span className="font-display text-[1.4rem] tracking-[-0.02em] text-[hsl(var(--foreground))]">
-        Clearview<span className="text-[hsl(var(--accent))]">.</span>
-      </span>
-    </a>
-  );
+/* ─── Reveal on scroll ─── */
+function useReveal() {
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const els = document.querySelectorAll<HTMLElement>('.reveal');
+    if (!reduceMotion && 'IntersectionObserver' in window) {
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-visible');
+              io.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.15, rootMargin: '0px 0px -60px 0px' },
+      );
+      els.forEach((el) => io.observe(el));
+      return () => io.disconnect();
+    } else {
+      els.forEach((el) => el.classList.add('is-visible'));
+      return undefined;
+    }
+  }, []);
 }
 
+/* ─── Header ─── */
 const NAV_LINKS = [
+  { href: '#top', label: 'Home' },
+  { href: '#about', label: 'About' },
   { href: '#services', label: 'Services' },
-  { href: '#standards', label: 'Our standard' },
-  { href: '#how-it-works', label: 'How it works' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '#reviews', label: 'Reviews' },
+  { href: '#contact', label: 'Contact' },
 ];
 
-function Header({ mode, onModeChange }: { mode: Mode; onModeChange: (value: Mode) => void }) {
+function Header() {
+  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const closeMenu = () => setMobileOpen(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const closeMenu = () => {
+    setMobileOpen(false);
+    document.body.style.overflow = '';
+  };
+
+  const toggleMenu = () => {
+    const next = !mobileOpen;
+    setMobileOpen(next);
+    document.body.style.overflow = next ? 'hidden' : '';
+  };
+
+  // smooth scroll with header offset
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const links = document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]');
+    const handler = (e: Event) => {
+      const a = e.currentTarget as HTMLAnchorElement;
+      const id = a.getAttribute('href');
+      if (!id || id.length < 2) return;
+      const target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      const offset = header.offsetHeight + 10;
+      const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+      window.scrollTo({ top, behavior: 'smooth' });
+    };
+    links.forEach((a) => a.addEventListener('click', handler));
+    return () => links.forEach((a) => a.removeEventListener('click', handler));
+  }, []);
 
   return (
     <>
-      <div className="bg-[hsl(var(--secondary))] px-4 py-2 text-center text-[11px] font-medium tracking-[0.03em] text-[hsl(var(--secondary-foreground)/.78)]">
-        <span className="text-[hsl(var(--accent))]">&#9679;</span>&nbsp; Locally owned in the Bay Area &middot; serving homes and teams since 2011 &nbsp;
-        <a className="underline underline-offset-4 hover:text-[hsl(var(--accent))]" href="#quote" data-testid="link-announcement-quote">
-          Book your first clean
-        </a>
-      </div>
-      <header className="sticky top-0 z-50 pt-3 sm:pt-4">
-        <div className="section-shell">
-          <div className="glass flex h-[68px] items-center justify-between rounded-full border border-[hsl(var(--border))] px-3 shadow-[var(--shadow-sm)] sm:px-4">
-            <Logo />
-            <nav className="hidden items-center gap-7 md:flex" aria-label="Primary navigation">
-              {NAV_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="focus-ring text-sm font-medium text-[hsl(var(--muted-foreground))] transition-colors hover:text-[hsl(var(--foreground))]"
-                  data-testid={`link-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  {link.label}
-                </a>
-              ))}
-            </nav>
-            <div className="hidden items-center gap-3 md:flex">
-              <div className="flex items-center rounded-full bg-[hsl(var(--muted))] p-1" aria-label="Choose service type">
-                <button
-                  onClick={() => onModeChange('residential')}
-                  className={`focus-ring rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${mode === 'residential' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="button-header-residential"
-                >
-                  Home
-                </button>
-                <button
-                  onClick={() => onModeChange('commercial')}
-                  className={`focus-ring rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${mode === 'commercial' ? 'bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'}`}
-                  data-testid="button-header-commercial"
-                >
-                  Business
-                </button>
-              </div>
-              <a
-                href="#quote"
-                className="btn-primary focus-ring group inline-flex items-center gap-2 rounded-full bg-[hsl(var(--accent))] py-2 pl-4 pr-2 text-sm font-bold text-[hsl(var(--accent-foreground))]"
-                data-testid="link-header-quote"
-              >
-                Book a visit
-                <span className="icon-chip flex h-6 w-6 items-center justify-center rounded-full bg-[hsl(var(--accent-foreground)/.12)]">
-                  <ArrowUpRight size={14} />
-                </span>
+      <header ref={headerRef} id="siteHeader" className={`site-header${scrolled ? ' scrolled' : ''}`}>
+        <div className="wrap header-row">
+          <a href="#top" className="brand" data-testid="link-logo">
+            <LogoBadge size={scrolled ? 38 : 46} />
+            <span className="brand-word">
+              <span className="script">Clearview</span>
+              <span className="sub">CLEANING CO.</span>
+            </span>
+          </a>
+
+          <nav className="primary-nav" aria-label="Primary navigation">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} data-testid={`link-nav-${link.label.toLowerCase()}`}>
+                {link.label}
               </a>
-            </div>
+            ))}
+          </nav>
+
+          <div className="header-actions">
+            <a href="#contact" className="btn btn-outline-light" data-testid="link-header-quote">
+              Request a Quote
+            </a>
             <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="focus-ring rounded-full p-2 md:hidden"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              className={`menu-toggle${mobileOpen ? ' open' : ''}`}
+              onClick={toggleMenu}
+              aria-label="Toggle menu"
               aria-expanded={mobileOpen}
               data-testid="button-mobile-menu"
             >
-              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              <span /><span /><span />
             </button>
           </div>
-          <AnimatePresence>
-            {mobileOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -8, height: 0 }}
-                transition={{ duration: 0.28, ease: EASE }}
-                className="glass mt-2 overflow-hidden rounded-3xl border border-[hsl(var(--border))] px-6 py-5 md:hidden"
-              >
-                <nav className="flex flex-col gap-5" aria-label="Mobile navigation">
-                  {NAV_LINKS.map((link) => (
-                    <a key={link.href} href={link.href} onClick={closeMenu} className="text-sm font-semibold" data-testid={`link-mobile-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                      {link.label}
-                    </a>
-                  ))}
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      onClick={() => { onModeChange('residential'); closeMenu(); }}
-                      className={`rounded-full border px-3 py-2 text-xs font-bold ${mode === 'residential' ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-[hsl(var(--border))]'}`}
-                      data-testid="button-mobile-residential"
-                    >
-                      Home care
-                    </button>
-                    <button
-                      onClick={() => { onModeChange('commercial'); closeMenu(); }}
-                      className={`rounded-full border px-3 py-2 text-xs font-bold ${mode === 'commercial' ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]' : 'border-[hsl(var(--border))]'}`}
-                      data-testid="button-mobile-commercial"
-                    >
-                      Facility care
-                    </button>
-                  </div>
-                  <a href="#quote" onClick={closeMenu} className="inline-flex w-fit items-center gap-2 rounded-full bg-[hsl(var(--accent))] px-4 py-2.5 text-sm font-bold text-[hsl(var(--accent-foreground))]" data-testid="link-mobile-quote">
-                    Book a visit <ArrowUpRight size={16} />
-                  </a>
-                </nav>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </header>
+
+      {/* Mobile overlay nav */}
+      <div className={`mobile-nav-overlay${mobileOpen ? ' open' : ''}`} aria-hidden={!mobileOpen}>
+        {NAV_LINKS.map((link) => (
+          <a key={link.href} href={link.href} onClick={closeMenu} data-testid={`link-mobile-${link.label.toLowerCase()}`}>
+            {link.label}
+          </a>
+        ))}
+        <a href="#contact" className="btn btn-gold" onClick={closeMenu} data-testid="link-mobile-quote">
+          Request a Quote
+        </a>
+      </div>
     </>
   );
 }
 
-function QuoteForm({ mode, onModeChange }: { mode: Mode; onModeChange: (value: Mode) => void }) {
+/* ─── Hero ─── */
+function Hero() {
+  const bgRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !bgRef.current || !heroRef.current) return;
+    let ticking = false;
+    const update = () => {
+      const rect = heroRef.current!.getBoundingClientRect();
+      if (rect.bottom > 0 && rect.top < window.innerHeight) {
+        const progress = Math.min(Math.max(-rect.top / rect.height, 0), 1);
+        bgRef.current!.style.transform = `scale(1.08) translateY(${progress * 60}px)`;
+      }
+      ticking = false;
+    };
+    const onScroll = () => { if (!ticking) { window.requestAnimationFrame(update); ticking = true; } };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <section className="hero" id="top" ref={heroRef}>
+      <div
+        ref={bgRef}
+        className="hero-bg"
+        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+      />
+      <div className="hero-scrim" />
+      <div className="wrap hero-inner">
+        <div className="hero-tag hero-fade-up d1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+          Serving the Bay Area since 2011
+        </div>
+        <h1 className="hero-fade-up d2">
+          Professional cleaning<br />done the way it should be.
+        </h1>
+        <p className="lede hero-fade-up d3">
+          Janitorial, home care, and deep cleaning for residences and commercial spaces —
+          handled by a local crew that shows up, does the work, and doesn't cut corners.
+        </p>
+        <svg className="hero-underline hero-fade-up d3" viewBox="0 0 220 14">
+          <path d="M2,8 Q30,-2 55,7 T110,7 T165,7 T218,6" />
+        </svg>
+        <div className="hero-cta-row hero-fade-up d4">
+          <a href="#contact" className="btn btn-gold" data-testid="link-hero-quote">Request a Quote</a>
+          <a href="#services" className="textlink" data-testid="link-hero-services">See what we clean</a>
+        </div>
+      </div>
+      <div className="scroll-cue" aria-hidden="true">
+        <span>SCROLL</span>
+        <span className="stick" />
+      </div>
+    </section>
+  );
+}
+
+/* ─── Trust strip ─── */
+function TrustStrip() {
+  return (
+    <div className="trust-strip">
+      <div className="wrap trust-row">
+        {[
+          { icon: <path d="M20 6L9 17l-5-5" />, text: 'Fully licensed & bonded' },
+          { icon: <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />, text: 'Family-owned, Bay Area based' },
+          { icon: <path d="M12 2l2.9 6.6L22 9.3l-5 4.9 1.2 7-6.2-3.4L5.8 21 7 14 2 9.3l7.1-.7z" fill="currentColor" />, text: '240+ five-star reviews' },
+        ].map(({ icon, text }) => (
+          <div key={text} className="trust-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{icon}</svg>
+            {text}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── About ─── */
+function About() {
+  return (
+    <section className="about" id="about">
+      <div className="wrap about-grid">
+        <div className="about-text reveal">
+          <h2>A decade of keeping Bay Area spaces looking the way they should.</h2>
+          <p><strong>Clearview Cleaning Co.</strong> is a local, family-owned business — we've been caring for homes and commercial buildings across the Bay Area since 2011.</p>
+          <p>We build every service around the space itself: nothing is a one-size-fits-all routine, and nothing gets rushed. Our crews use professional-grade equipment and eco-conscious supplies chosen for the surfaces we're actually working on.</p>
+          <p>From nightly janitorial rounds to deep resets and move-out cleans, we show up on time, do the work with care, and leave the space ready for what's next.</p>
+          <p>Call us for a free walkthrough before we ever quote a price.</p>
+          <a href="#contact" className="btn btn-solid" style={{ marginTop: '8px' }} data-testid="link-about-quote">Request a Quote</a>
+        </div>
+        <div className="about-badge-wrap reveal">
+          <svg className="waves-bg" viewBox="0 0 200 200" aria-hidden="true">
+            <circle cx="100" cy="100" r="98" fill="none" stroke="#4C88AC" strokeWidth="1" strokeDasharray="2 6" />
+          </svg>
+          <LogoBadge size={260} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Services ─── */
+const SERVICES = [
+  { img: 'https://images.unsplash.com/photo-1627905646269-7f034dcc5738?auto=format&fit=crop&w=800&q=75', alt: 'Cleaner wiping down an office desk', title: 'Recurring Home Care', desc: 'Steady, attentive maintenance for the rooms your family actually lives in.' },
+  { img: 'https://images.unsplash.com/photo-1437326300822-01d8f13c024f?auto=format&fit=crop&w=800&q=75', alt: 'Janitor mopping a hard floor', title: 'Floor Care', desc: 'Stripping, waxing, and buffing for hard-surface floors that see heavy foot traffic.' },
+  { img: 'https://images.unsplash.com/photo-1482449609509-eae2a7ea42b7?auto=format&fit=crop&w=800&q=75', alt: 'Technician cleaning exterior glass', title: 'Window Cleaning', desc: 'Interior and exterior glass, done streak-free from the lobby door to the top floor.' },
+  { img: 'https://images.unsplash.com/photo-1669101602124-f5b78895d91c?auto=format&fit=crop&w=800&q=75', alt: 'Worker mopping a sterile clean room', title: 'Deep Cleans & Resets', desc: 'For the moments that need more than a maintenance visit.' },
+  { img: 'https://images.unsplash.com/photo-1716703373229-b0e43de7dd5c?auto=format&fit=crop&w=800&q=75', alt: 'Open-plan office space', title: 'Office & Workplace', desc: 'Full-service care for open-plan floors, private offices, and everything in between.' },
+  { img: 'https://images.unsplash.com/photo-1740657254989-42fe9c3b8cce?auto=format&fit=crop&w=800&q=75', alt: 'Cleaner scrubbing a tile floor', title: 'Tile & Grout Cleaning', desc: 'Deep extraction that lifts ground-in dirt without damaging the grout line.' },
+  { img: 'https://images.unsplash.com/photo-1686178827149-6d55c72d81df?auto=format&fit=crop&w=800&q=75', alt: 'Vacuuming upholstered office furniture', title: 'Carpet & Upholstery', desc: 'Hot-water extraction for carpet, rugs, and office furniture.' },
+  { img: 'https://images.unsplash.com/photo-1580256081112-e49377338b7f?auto=format&fit=crop&w=800&q=75', alt: 'Janitorial supply cart', title: 'Move-in / Move-out', desc: 'A fresh beginning, handled with care and a detailed finish.' },
+  { img: 'https://images.unsplash.com/photo-1718152521364-b9655b8a7926?auto=format&fit=crop&w=800&q=75', alt: 'Power washing an outdoor walkway', title: 'Power Washing', desc: 'Pressure washing for entries, walkways, and outdoor areas.' },
+];
+
+function Services() {
+  return (
+    <section className="services" id="services">
+      <div className="wrap">
+        <div className="section-head reveal">
+          <h2>Services</h2>
+          <p>You can trust Clearview Cleaning Co.'s years of experience and professionalism — here's the full range of what our crews handle.</p>
+        </div>
+        <div className="service-grid reveal-group">
+          {SERVICES.map((s, i) => (
+            <div key={s.title} className="service-card reveal" style={{ '--i': i } as React.CSSProperties} data-testid={`service-card-${i}`}>
+              <div className="service-media">
+                <img loading="lazy" src={s.img} alt={s.alt} />
+              </div>
+              <div className="service-accent" />
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── CTA Band ─── */
+function CtaBand() {
+  return (
+    <section className="cta-band">
+      <div className="wave-top" aria-hidden="true">
+        <svg viewBox="0 0 1200 70" preserveAspectRatio="none">
+          <path d="M0,35 C150,70 350,0 600,35 C850,70 1050,0 1200,35 L1200,70 L0,70 Z" fill="var(--navy)" />
+        </svg>
+      </div>
+      <div className="wrap cta-inner">
+        <p className="cta-quote reveal">&ldquo;We maintain quality services at a price you can afford.&rdquo;</p>
+        <p className="cta-attr reveal">— Clearview Cleaning Co. —</p>
+        <a href="#contact" className="btn btn-gold reveal" data-testid="link-cta-quote">Request a Quote</a>
+        <p className="cta-blurb reveal" style={{ marginTop: '34px' }}>
+          Clearview Cleaning Co. is a local, family-owned business. We've been serving the Bay Area for more than a decade.
+        </p>
+        <div className="cta-info-grid reveal-group">
+          {[
+            { title: 'Business Hours', content: 'Monday – Friday\n8:00am – 6:00pm' },
+            { title: 'Phone & Email', content: '(415) 555-0184\nhello@clearview.co', links: ['tel:+14155550184', 'mailto:hello@clearview.co'] },
+            { title: 'Insured & Bonded', content: 'Fully licensed and\nbonded for your peace of mind.' },
+            { title: 'Service Area', content: 'San Francisco\nMarin · East Bay' },
+          ].map(({ title, content, links }, i) => (
+            <div key={title} className="col reveal" style={{ '--i': i } as React.CSSProperties}>
+              <h4>{title}</h4>
+              {links ? (
+                <p>
+                  {content.split('\n').map((line, j) => (
+                    <span key={j}>{j > 0 && <br />}<a href={links[j] ?? '#'}>{line}</a></span>
+                  ))}
+                </p>
+              ) : (
+                <p>{content.split('\n').map((line, j) => <span key={j}>{j > 0 && <br />}{line}</span>)}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="wave-bottom" aria-hidden="true">
+        <svg viewBox="0 0 1200 70" preserveAspectRatio="none">
+          <path d="M0,35 C150,0 350,70 600,35 C850,0 1050,70 1200,35 L1200,0 L0,0 Z" fill="var(--paper)" />
+        </svg>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Testimonial carousel ─── */
+const REVIEWS = [
+  { name: 'Maya & Chris', body: 'The first time we walked back in, we both said the same thing: it feels like our home again. Steady, reliable — exactly what we needed.' },
+  { name: 'David R.', body: 'Had our office cleaned last week and was amazed at the result — no shortcuts, no dirt, just clean. They even went above and beyond on common areas.' },
+  { name: 'Frank M.', body: "Been with this crew for two seasons now, and each visit has been better than the last. This year's team did an outstanding job on the whole floor." },
+  { name: 'Sandra L.', body: 'The crew handled a tremendous job cleaning our windows — very accommodating with our schedule and finished the whole thing in no time.' },
+  { name: 'Marcus T.', body: 'Our lobby floors have never looked better. Reliable crew, fair pricing, and they always call ahead before showing up.' },
+];
+
+function StarIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor">
+      <path d="M10 1l2.6 5.9 6.4.6-4.8 4.3 1.4 6.2L10 14.8 4.4 18l1.4-6.2L1 7.5l6.4-.6z" />
+    </svg>
+  );
+}
+
+function GoogleBadge() {
+  return (
+    <svg className="g-badge" viewBox="0 0 48 48">
+      <path fill="#FBBC05" d="M9.8 24c0-1.6.3-3.1.8-4.5L2.6 13.9A23.9 23.9 0 000 24c0 3.8.9 7.5 2.6 10.6l8-6.2c-.5-1.4-.8-2.9-.8-4.4z" />
+      <path fill="#EA4335" d="M24 9.6c3.7 0 6.6 1.3 8.6 3.1l6.6-6.4C35 2.3 30 0 24 0 14.6 0 6.5 5.4 2.6 13.4l8 6.2C12.5 14 17.8 9.6 24 9.6z" />
+      <path fill="#34A853" d="M24 38.4c-6.2 0-11.5-4.4-13.4-10l-8 6.2C6.5 42.6 14.6 48 24 48c5.8 0 10.9-1.9 14.9-5.4l-7.3-5.7c-2 1.4-4.6 2.5-7.6 2.5z" />
+      <path fill="#4285F4" d="M46.9 24.6c0-1.6-.1-3.1-.4-4.6H24v9h12.9c-.6 3-2.3 5.4-4.8 7.1l7.3 5.7C43.7 38 46.9 32 46.9 24.6z" />
+    </svg>
+  );
+}
+
+function Testimonials() {
+  const [index, setIndex] = useState(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const computePerView = () => {
+    const w = window.innerWidth;
+    if (w <= 760) return 1;
+    if (w <= 980) return 2;
+    return 4;
+  };
+
+  const maxIndex = useCallback(() => Math.max(0, REVIEWS.length - computePerView()), []);
+
+  const goTo = useCallback((i: number) => {
+    setIndex(Math.min(Math.max(i, 0), maxIndex()));
+  }, [maxIndex]);
+
+  const resetAutoplay = useCallback(() => {
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setIndex((prev) => (prev + 1 > maxIndex() ? 0 : prev + 1));
+    }, 5500);
+  }, [maxIndex]);
+
+  useEffect(() => {
+    resetAutoplay();
+    return () => clearInterval(timerRef.current);
+  }, [resetAutoplay]);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const cards = track.querySelectorAll<HTMLElement>('.review-card');
+    if (!cards.length) return;
+    const cardWidth = cards[0].getBoundingClientRect().width;
+    track.style.transform = `translateX(-${index * (cardWidth + 24)}px)`;
+  }, [index]);
+
+  useEffect(() => {
+    const onResize = () => { setIndex(0); };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  const dots = Array.from({ length: maxIndex() + 1 });
+
+  return (
+    <section className="testimonials" id="reviews">
+      <div className="wrap">
+        <div className="testi-head reveal">
+          <h2>What Our Customers Are Saying</h2>
+          <p>Over <span className="stat">240 five-star reviews</span> from Bay Area homes and offices. Here's what a few had to say.</p>
+        </div>
+        <div className="carousel-wrap reveal"
+          onMouseEnter={() => clearInterval(timerRef.current)}
+          onMouseLeave={() => resetAutoplay()}
+        >
+          <div className="carousel-viewport">
+            <div className="carousel-track" ref={trackRef}>
+              {REVIEWS.map((r) => (
+                <div key={r.name} className="review-card">
+                  <div className="review-top">
+                    <div>
+                      <div className="review-name">{r.name}</div>
+                      <div className="stars">{Array.from({ length: 5 }).map((_, i) => <StarIcon key={i} />)}</div>
+                    </div>
+                    <GoogleBadge />
+                  </div>
+                  <p className="review-body">{r.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="carousel-controls">
+            <button
+              className="carousel-arrow"
+              aria-label="Previous reviews"
+              onClick={() => { goTo(index - 1 < 0 ? maxIndex() : index - 1); resetAutoplay(); }}
+              data-testid="button-carousel-prev"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
+            </button>
+            <div className="carousel-dots">
+              {dots.map((_, i) => (
+                <button
+                  key={i}
+                  className={i === index ? 'active' : ''}
+                  aria-label={`Go to review set ${i + 1}`}
+                  onClick={() => { goTo(i); resetAutoplay(); }}
+                  data-testid={`button-carousel-dot-${i}`}
+                />
+              ))}
+            </div>
+            <button
+              className="carousel-arrow"
+              aria-label="Next reviews"
+              onClick={() => { goTo(index + 1 > maxIndex() ? 0 : index + 1); resetAutoplay(); }}
+              data-testid="button-carousel-next"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Quote Form ─── */
+function QuoteForm() {
   const createQuote = useCreateQuote();
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
@@ -228,387 +513,157 @@ function QuoteForm({ mode, onModeChange }: { mode: Mode; onModeChange: (value: M
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (name.trim().length < 2) { setError('Please add your name so we know who to reply to.'); return; }
     if (contact.trim().length < 5) { setError('Please add an email or phone number.'); return; }
     if (message.trim().length < 10) { setError('A few more details will help us prepare the right quote.'); return; }
     setError('');
-    createQuote.mutate({ data: { name: name.trim(), contact: contact.trim(), message: message.trim(), mode } }, {
-      onSuccess: () => {
-        setSuccess(true);
-        setName('');
-        setContact('');
-        setMessage('');
+    createQuote.mutate(
+      { data: { name: name.trim(), contact: contact.trim(), message: message.trim(), mode: 'residential' } },
+      {
+        onSuccess: () => { setSuccess(true); setName(''); setContact(''); setMessage(''); },
+        onError: () => setError('We could not send that just now. Please try again or call us at (415) 555-0184.'),
       },
-      onError: () => setError('We could not send that just now. Please try again or call us at (415) 555-0184.'),
-    });
+    );
   };
 
   return (
-    <div id="quote" className="bezel scroll-mt-28 shadow-[var(--shadow-lg)]">
-      <div className="bezel-inner bg-[hsl(var(--card))] p-6 ring-1 ring-[hsl(var(--card-border))] sm:p-8">
-        <div className="mb-7 flex items-start justify-between gap-4">
-          <div>
-            <p className="eyebrow mb-2 text-[hsl(var(--primary))]">Start here</p>
-            <h2 className="font-display text-[2.1rem] leading-[1.05] tracking-[-0.02em]">Let&rsquo;s plan your visit.</h2>
-          </div>
-          <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1.5 font-mono-ui text-[10px] font-bold text-[hsl(var(--muted-foreground))]">~1 min</span>
+    <form className="quote-form" id="quoteForm" onSubmit={submit} noValidate>
+      <div className="form-row">
+        <div className="field">
+          <label htmlFor="fName">Name</label>
+          <input type="text" id="fName" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" data-testid="input-quote-name" />
         </div>
-        <div className="mb-6 grid grid-cols-2 rounded-xl bg-[hsl(var(--muted)/.7)] p-1" role="tablist" aria-label="Quote audience">
-          <button type="button" onClick={() => onModeChange('residential')} className={`focus-ring flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-bold transition-all ${mode === 'residential' ? 'bg-[hsl(var(--card))] text-[hsl(var(--primary))] shadow-sm' : 'text-[hsl(var(--muted-foreground))]'}`} data-testid="button-quote-residential">
-            <HomeIcon size={15} /> Home
-          </button>
-          <button type="button" onClick={() => onModeChange('commercial')} className={`focus-ring flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-bold transition-all ${mode === 'commercial' ? 'bg-[hsl(var(--card))] text-[hsl(var(--primary))] shadow-sm' : 'text-[hsl(var(--muted-foreground))]'}`} data-testid="button-quote-commercial">
-            <Building2 size={15} /> Business
-          </button>
+        <div className="field">
+          <label htmlFor="fPhone">Phone</label>
+          <input type="tel" id="fPhone" value={contact} onChange={(e) => setContact(e.target.value)} placeholder="(415) 000-0000" data-testid="input-quote-contact" />
         </div>
-        {success ? (
-          <div className="flex min-h-[280px] flex-col items-center justify-center rounded-xl border border-[hsl(var(--primary)/.2)] bg-[hsl(var(--primary)/.06)] p-6 text-center">
-            <span className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><Check size={25} /></span>
-            <h3 className="font-display text-2xl tracking-[-0.02em]">You&rsquo;re on our list.</h3>
-            <p className="mt-2 max-w-xs text-sm leading-6 text-[hsl(var(--muted-foreground))]">Thanks for reaching out. A Clearview coordinator will reply within one business day with times and a clear price.</p>
-            <button onClick={() => setSuccess(false)} className="mt-6 text-sm font-bold text-[hsl(var(--primary))] underline underline-offset-4" data-testid="button-submit-another">Send another request</button>
-          </div>
-        ) : (
-          <form onSubmit={submit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="quote-name" className="mb-1.5 block text-xs font-bold text-[hsl(var(--foreground))]">Your name</label>
-              <input id="quote-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Jane or Jordan Lee" className="quote-field focus-ring w-full rounded-xl border border-[hsl(var(--border))] px-4 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--primary))]" data-testid="input-quote-name" />
-            </div>
-            <div>
-              <label htmlFor="quote-contact" className="mb-1.5 block text-xs font-bold text-[hsl(var(--foreground))]">Email or phone</label>
-              <input id="quote-contact" value={contact} onChange={(event) => setContact(event.target.value)} placeholder="jane@example.com" className="quote-field focus-ring w-full rounded-xl border border-[hsl(var(--border))] px-4 py-3 text-sm outline-none transition-colors focus:border-[hsl(var(--primary))]" data-testid="input-quote-contact" />
-            </div>
-            <div>
-              <label htmlFor="quote-message" className="mb-1.5 block text-xs font-bold text-[hsl(var(--foreground))]">{mode === 'residential' ? 'What would you like cleaned?' : 'Tell us about your facility'}</label>
-              <textarea id="quote-message" value={message} onChange={(event) => setMessage(event.target.value)} rows={3} placeholder={modeCopy[mode].prompt} className="quote-field focus-ring w-full resize-none rounded-xl border border-[hsl(var(--border))] px-4 py-3 text-sm leading-5 outline-none transition-colors focus:border-[hsl(var(--primary))]" data-testid="input-quote-message" />
-            </div>
-            {error && <p className="rounded-lg bg-[hsl(var(--destructive)/.09)] px-3 py-2 text-xs font-medium text-[hsl(var(--destructive))]" role="alert" data-testid="status-quote-error">{error}</p>}
-            <button type="submit" disabled={createQuote.isPending} className="btn-primary focus-ring group flex w-full items-center justify-between rounded-xl bg-[hsl(var(--primary))] py-3.5 pl-5 pr-3 text-sm font-bold text-[hsl(var(--primary-foreground))] disabled:cursor-wait disabled:opacity-70" data-testid="button-submit-quote">
-              {createQuote.isPending ? 'Sending your request\u2026' : 'Request my visit'}
-              <span className="icon-chip flex h-7 w-7 items-center justify-center rounded-full bg-[hsl(var(--primary-foreground)/.14)]"><ArrowUpRight size={16} /></span>
-            </button>
-            <p className="text-center text-[11px] leading-4 text-[hsl(var(--muted-foreground))]">No sales call. Just a clear plan, a real price, and times that work.</p>
-          </form>
-        )}
       </div>
+      <div className="form-row">
+        <div className="field full">
+          <label htmlFor="fMessage">Tell us about your space</label>
+          <textarea id="fMessage" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Home or office, square footage, how often you'd like service..." data-testid="input-quote-message" />
+        </div>
+      </div>
+      {error && <p style={{ color: '#C1553F', fontSize: '13px', marginBottom: '12px' }} role="alert" data-testid="status-quote-error">{error}</p>}
+      {success ? (
+        <div className="form-success" data-testid="status-quote-success">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>
+          <span>Thanks, {name || 'there'} — we've received your request and will be in touch within one business day.</span>
+        </div>
+      ) : (
+        <button type="submit" className="btn btn-solid" disabled={createQuote.isPending} data-testid="button-submit-quote">
+          {createQuote.isPending ? 'Sending…' : 'Send Request'}
+        </button>
+      )}
+    </form>
+  );
+}
+
+/* ─── Contact Section ─── */
+function Contact() {
+  return (
+    <section className="contact" id="contact">
+      <div className="wrap contact-grid">
+        <div className="contact-intro reveal">
+          <h2>Request a Quote</h2>
+          <p>Tell us a little about your space and we'll get back to you within one business day — or call us directly for a free walkthrough.</p>
+          <div className="contact-list">
+            {[
+              {
+                icon: <path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6 19.8 19.8 0 01-3.1-8.7A2 2 0 014.1 2h3a2 2 0 012 1.7c.1 1 .3 2 .6 3a2 2 0 01-.5 2.1L8 10a16 16 0 006 6l1.2-1.2a2 2 0 012.1-.5c1 .3 2 .5 3 .6a2 2 0 011.7 2z" />,
+                label: 'Phone', value: '(415) 555-0184', href: 'tel:+14155550184',
+              },
+              {
+                icon: <><path d="M4 4h16v16H4z" opacity="0" /><path d="M22 6l-10 7L2 6" /><path d="M2 6h20v12H2z" /></>,
+                label: 'Email', value: 'hello@clearview.co', href: 'mailto:hello@clearview.co',
+              },
+              {
+                icon: <><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>,
+                label: 'Business Hours', value: 'Monday – Friday, 8am – 6pm',
+              },
+              {
+                icon: <><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></>,
+                label: 'Service Area', value: 'San Francisco · Marin · East Bay',
+              },
+            ].map(({ icon, label, value, href }) => (
+              <div key={label} className="item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{icon}</svg>
+                <div>
+                  <div className="label">{label}</div>
+                  {href
+                    ? <a className="value" href={href} data-testid={`link-contact-${label.toLowerCase()}`}>{value}</a>
+                    : <div className="value">{value}</div>
+                  }
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="reveal">
+          <QuoteForm />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Footer ─── */
+function Footer() {
+  return (
+    <footer className="site-footer">
+      <div className="wrap">
+        <div className="footer-top">
+          <div className="footer-brand">
+            <LogoBadge size={38} />
+            <span className="script">Clearview Cleaning Co.</span>
+          </div>
+          <nav className="footer-nav" aria-label="Footer navigation">
+            {NAV_LINKS.map((link) => (
+              <a key={link.href} href={link.href} data-testid={`link-footer-${link.label.toLowerCase()}`}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+        <div className="footer-bottom">
+          <span>© 2026 Clearview Cleaning Co. All rights reserved.</span>
+          <span>Licensed &amp; Bonded — Bay Area, CA</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ─── Page: Home ─── */
+function Home() {
+  useReveal();
+
+  return (
+    <div id="top" className="overflow-hidden">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-[#E3A23B] focus:px-4 focus:py-2 focus:text-sm focus:font-bold">
+        Skip to content
+      </a>
+      <Header />
+      <main id="main">
+        <Hero />
+        <TrustStrip />
+        <About />
+        <Services />
+        <CtaBand />
+        <Testimonials />
+        <Contact />
+      </main>
+      <Footer />
     </div>
   );
 }
 
-const FEATURES = [
-  { icon: ShieldCheck, title: 'Insured & bonded', text: 'Peace of mind for every home and facility, every visit.' },
-  { icon: BadgeCheck, title: '15+ years in the Bay Area', text: 'An established local team, not a rotating gig-app roster.' },
-  { icon: Users, title: '60+ trained cleaners', text: 'Vetted, trained, and matched carefully to your space.' },
-  { icon: Star, title: '4.9 / 5 average rating', text: 'From more than 240 local homes and offices.' },
-];
-
-const STANDARDS: [string, string][] = [
-  ['A familiar face', 'The same small crew, carefully matched to your space.'],
-  ['A visible plan', 'Your priorities are noted, shared, and checked before we leave.'],
-  ['A real response', 'Questions get answered by a human who knows your account.'],
-];
-
-const PROCESS: [string, string, string][] = [
-  ['01', 'Tell us what matters', 'A quick conversation gives us the shape of your home or facility and the details you care about most.'],
-  ['02', 'Get the clear plan', 'You receive a straightforward scope, timing, and price. No vague \u201cstarting at\u201d surprises.'],
-  ['03', 'Come home to done', 'Your crew arrives prepared, works with care, and leaves the space ready for what is next.'],
-];
-
-const FAQS: [string, string][] = [
-  ['How do I actually book a cleaning?', 'Use the form above or call us. We reply within a business day with real time slots and a clear price \u2014 nothing is scheduled until you confirm it.'],
-  ['Do I need to be home for the clean?', 'Not at all. Many clients share a secure entry plan, and we always confirm arrival and completion by text.'],
-  ['Can I request the same crew?', 'Yes. Consistency is part of the service \u2014 we match a small crew to your space and keep that relationship steady.'],
-  ['What if I need something outside the usual checklist?', 'Tell us. We will build it into the scope when we can, or point you to a trusted local specialist when we cannot.'],
-  ['Do you bring your own supplies?', 'Yes. Our crews arrive with professional-grade, low-scent products and everything needed for the agreed scope.'],
-  ['Are you insured, and what if my usual cleaner is unavailable?', 'Yes, fully insured and bonded, with backup staff available so your agreed schedule stays dependable.'],
-];
-
-function Home() {
-  const [mode, setMode] = useState<Mode>('residential');
-  const copy = modeCopy[mode];
-
-  return (
-    <div id="top" className="overflow-hidden">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-[hsl(var(--accent))] focus:px-4 focus:py-2 focus:text-sm focus:font-bold">
-        Skip to content
-      </a>
-      <Header mode={mode} onModeChange={setMode} />
-      <main id="main">
-        {/* HERO */}
-        <section className="relative bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
-          <div className="grain droplet-grid absolute inset-0 overflow-hidden opacity-[.35]" />
-          <div className="pointer-events-none absolute -right-32 -top-24 h-[460px] w-[460px] rounded-full bg-[hsl(var(--primary)/.4)] blur-3xl" />
-          <div className="streak pointer-events-none absolute inset-y-0 right-[-10%] w-[65%] rotate-[6deg] opacity-70 blur-2xl" />
-          <div className="section-shell relative grid min-h-[660px] items-center gap-12 py-16 lg:grid-cols-[1.05fr_.95fr] lg:gap-20 lg:py-20">
-            <div>
-              <Reveal>
-                <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[hsl(var(--secondary-foreground)/.18)] px-3 py-2 text-xs font-medium text-[hsl(var(--secondary-foreground)/.78)]">
-                  <span className="h-2 w-2 rounded-full bg-[hsl(var(--accent))]" /> {copy.label} <span className="text-[hsl(var(--secondary-foreground)/.35)]">/</span> Bay Area
-                </div>
-              </Reveal>
-              <Reveal delay={0.05}>
-                <h1 className="font-display text-[clamp(3.4rem,7.6vw,6.8rem)] font-normal leading-[.94] tracking-[-0.01em] text-[hsl(var(--secondary-foreground))]">
-                  {copy.title}
-                </h1>
-              </Reveal>
-              <Reveal delay={0.1}>
-                <p className="mt-8 max-w-[470px] text-lg leading-8 text-[hsl(var(--secondary-foreground)/.7)]">{copy.body}</p>
-              </Reveal>
-              <Reveal delay={0.15}>
-                <div className="mt-9 flex flex-wrap items-center gap-6">
-                  <a href="#quote" className="btn-primary focus-ring group inline-flex items-center gap-3 rounded-full bg-[hsl(var(--accent))] py-3 pl-5 pr-2.5 text-sm font-bold text-[hsl(var(--accent-foreground))]" data-testid="link-hero-quote">
-                    Book your clean
-                    <span className="icon-chip flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--accent-foreground)/.12)]"><ArrowUpRight size={16} /></span>
-                  </a>
-                  <a href="#services" className="focus-ring inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--secondary-foreground)/.72)] transition-colors hover:text-[hsl(var(--secondary-foreground))]" data-testid="link-hero-services">
-                    See what we do <ArrowDownRight size={16} />
-                  </a>
-                </div>
-              </Reveal>
-              <Reveal delay={0.2}>
-                <div className="mt-12 flex items-center gap-4 border-t border-[hsl(var(--secondary-foreground)/.14)] pt-5">
-                  <div className="flex -space-x-2">
-                    {['MC', 'DR', 'AS'].map((initials) => (
-                      <span key={initials} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[hsl(var(--secondary))] bg-[hsl(var(--primary))] text-[9px] font-bold text-[hsl(var(--primary-foreground))]">{initials}</span>
-                    ))}
-                  </div>
-                  <p className="text-xs text-[hsl(var(--secondary-foreground)/.6)]">
-                    <strong className="text-[hsl(var(--secondary-foreground)/.92)]">Your neighbors</strong> keep coming back.<br />4.9 average across 240+ clean homes.
-                  </p>
-                </div>
-              </Reveal>
-            </div>
-            <Reveal delay={0.12}>
-              <QuoteForm mode={mode} onModeChange={setMode} />
-            </Reveal>
-          </div>
-          <div className="section-shell relative flex items-center justify-between border-t border-[hsl(var(--secondary-foreground)/.12)] py-4 text-[10px] font-bold uppercase tracking-[.13em] text-[hsl(var(--secondary-foreground)/.45)]">
-            <span>Care you can see</span><span className="hidden sm:block">A better baseline for every space</span><span>Est. 2011 &middot; CA</span>
-          </div>
-        </section>
-
-        {/* TRUST STRIP */}
-        <section className="border-b border-[hsl(var(--border))] bg-[hsl(var(--card)/.6)]">
-          <div className="section-shell grid gap-0 py-8 sm:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((feature, index) => (
-              <Reveal key={feature.title} delay={index * 0.05} className={`flex gap-4 py-4 sm:px-6 ${index > 0 ? 'sm:border-l sm:border-[hsl(var(--border))]' : ''} ${index >= 2 ? 'border-t border-[hsl(var(--border))] sm:border-t-0' : ''}`}>
-                <div>
-                  <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--primary)/.08)] text-[hsl(var(--primary))]"><feature.icon size={17} /></span>
-                  <h3 className="text-sm font-bold" data-testid={`feature-title-${index}`}>{feature.title}</h3>
-                  <p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{feature.text}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* SERVICES */}
-        <section id="services" className="section-shell scroll-mt-24 py-24 sm:py-32">
-          <div className="grid gap-12 lg:grid-cols-[.72fr_1.28fr] lg:gap-24">
-            <Reveal className="lg:sticky lg:top-32 lg:self-start">
-              <p className="eyebrow text-[hsl(var(--primary))]">The Clearview menu</p>
-              <h2 className="mt-4 max-w-sm font-display text-5xl leading-[.98] tracking-[-0.01em] sm:text-6xl">The right clean for your real life.</h2>
-              <p className="mt-6 max-w-sm text-base leading-7 text-[hsl(var(--muted-foreground))]">We do not force every space into the same checklist. Tell us what matters, and we build the care around it.</p>
-              <a href="#quote" className="mt-8 inline-flex items-center gap-2 text-sm font-bold text-[hsl(var(--primary))] underline decoration-[hsl(var(--accent))] decoration-2 underline-offset-8 hover:text-[hsl(var(--secondary))]" data-testid="link-services-quote">
-                Talk through your space <ArrowUpRight size={16} />
-              </a>
-            </Reveal>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Reveal className="sm:col-span-2">
-                <article className="lift relative min-h-[340px] overflow-hidden rounded-[22px] bg-[hsl(var(--primary))] p-7 text-[hsl(var(--primary-foreground))]">
-                  <div className="droplet-grid pointer-events-none absolute right-0 top-0 h-full w-1/2 opacity-40" />
-                  <div className="streak pointer-events-none absolute -right-10 -top-10 h-52 w-52 rounded-full opacity-60 blur-xl" />
-                  <span className="eyebrow relative text-[hsl(var(--primary-foreground)/.6)]">{mode === 'residential' ? 'Home care' : 'Facility care'}</span>
-                  <div className="relative mt-24 max-w-[360px]">
-                    <h3 className="font-display text-4xl tracking-[-.01em]">A clean that fits your rhythm.</h3>
-                    <p className="mt-3 text-sm leading-6 text-[hsl(var(--primary-foreground)/.68)]">{copy.services[0]} with a plan that stays steady as life changes.</p>
-                  </div>
-                  <span className="absolute bottom-7 right-7 flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"><ArrowUpRight size={18} /></span>
-                </article>
-              </Reveal>
-              <Reveal delay={0.05}>
-                <article className="lift h-full rounded-[22px] border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-7">
-                  <span className="eyebrow text-[hsl(var(--muted-foreground))]">Reset</span>
-                  <h3 className="mt-16 font-display text-3xl tracking-[-.01em]">{copy.services[1]}</h3>
-                  <p className="mt-3 text-sm leading-6 text-[hsl(var(--muted-foreground))]">For the moments that need more than a maintenance visit.</p>
-                  <div className="mt-7 h-1 w-12 bg-[hsl(var(--accent))]" />
-                </article>
-              </Reveal>
-              <Reveal delay={0.1}>
-                <article className="lift h-full rounded-[22px] bg-[hsl(var(--accent))] p-7 text-[hsl(var(--accent-foreground))]">
-                  <span className="eyebrow text-[hsl(var(--accent-foreground)/.65)]">Transition</span>
-                  <h3 className="mt-16 font-display text-3xl tracking-[-.01em]">{copy.services[2]}</h3>
-                  <p className="mt-3 text-sm leading-6 text-[hsl(var(--accent-foreground)/.72)]">A fresh beginning, handled with care and a detailed finish.</p>
-                  <div className="mt-7 flex justify-end"><Sparkles size={27} strokeWidth={1.5} /></div>
-                </article>
-              </Reveal>
-            </div>
-          </div>
-        </section>
-
-        {/* STANDARDS */}
-        <section id="standards" className="scroll-mt-24 bg-[hsl(var(--muted)/.7)] py-24 sm:py-32">
-          <div className="section-shell grid items-center gap-14 lg:grid-cols-[1fr_1fr] lg:gap-24">
-            <Reveal>
-              <div className="relative min-h-[460px] overflow-hidden rounded-[24px] bg-[hsl(var(--secondary))] p-8 text-[hsl(var(--secondary-foreground))]">
-                <div className="droplet-grid pointer-events-none absolute inset-0 opacity-40" />
-                <div className="streak pointer-events-none absolute inset-y-[-20%] right-[-30%] w-[80%] rotate-[10deg] opacity-70 blur-2xl" />
-                <div className="relative flex h-full flex-col justify-between">
-                  <div className="flex items-start justify-between">
-                    <span className="eyebrow text-[hsl(var(--secondary-foreground)/.6)]">Inside the standard</span>
-                    <ShieldCheck size={25} className="text-[hsl(var(--accent))]" />
-                  </div>
-                  <div>
-                    <p className="font-display text-7xl leading-none tracking-[-.01em] text-[hsl(var(--accent))]">clear<span className="text-[hsl(var(--secondary-foreground))]">.</span></p>
-                    <p className="mt-3 max-w-[240px] text-sm leading-6 text-[hsl(var(--secondary-foreground)/.62)]">Our promise is simple: you should never have to wonder what happened while you were away.</p>
-                  </div>
-                  <div className="flex items-end justify-between border-t border-[hsl(var(--secondary-foreground)/.16)] pt-5">
-                    <span className="eyebrow text-[hsl(var(--secondary-foreground)/.5)]">Our promise</span>
-                    <span className="text-xs font-bold">No corners skipped</span>
-                  </div>
-                </div>
-              </div>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <div>
-                <p className="eyebrow text-[hsl(var(--primary))]">Why Clearview</p>
-                <h2 className="mt-4 max-w-lg font-display text-5xl leading-[.98] tracking-[-.01em] sm:text-6xl">Dependable is a design choice.</h2>
-                <p className="mt-6 max-w-lg text-base leading-7 text-[hsl(var(--muted-foreground))]">We built the company around the parts of cleaning service that usually feel fuzzy: who is coming, what will be done, and whether someone will make it right.</p>
-                <div className="mt-8 space-y-5">
-                  {STANDARDS.map(([title, text]) => (
-                    <div key={title} className="flex gap-4">
-                      <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><Check size={12} strokeWidth={3} /></span>
-                      <div>
-                        <h3 className="text-sm font-bold">{title}</h3>
-                        <p className="mt-1 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* HOW IT WORKS */}
-        <section id="how-it-works" className="section-shell scroll-mt-24 py-24 sm:py-32">
-          <Reveal>
-            <div className="mb-14 flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
-              <div>
-                <p className="eyebrow text-[hsl(var(--primary))]">A lighter lift</p>
-                <h2 className="mt-4 font-display text-5xl leading-[.95] tracking-[-.01em] sm:text-6xl">Three steps.<br />Then breathe.</h2>
-              </div>
-              <p className="max-w-xs text-sm leading-6 text-[hsl(var(--muted-foreground))]">From first hello to finished space, the process is as considered as the result.</p>
-            </div>
-          </Reveal>
-          <div className="relative grid gap-10 border-t border-[hsl(var(--border))] pt-10 md:grid-cols-3 md:gap-8">
-            {PROCESS.map(([number, title, text], index) => (
-              <Reveal key={number} delay={index * 0.08} className="relative">
-                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[hsl(var(--primary))] font-mono-ui text-xs font-bold text-[hsl(var(--primary-foreground))]">{number}</span>
-                <h3 className="mt-8 max-w-[220px] font-display text-3xl leading-[1.02] tracking-[-.01em]">{title}</h3>
-                <p className="mt-4 max-w-[260px] text-sm leading-6 text-[hsl(var(--muted-foreground))]">{text}</p>
-              </Reveal>
-            ))}
-          </div>
-        </section>
-
-        {/* TESTIMONIAL + STATS */}
-        <section className="relative overflow-hidden bg-[hsl(var(--primary))] py-24 text-[hsl(var(--primary-foreground))] sm:py-28">
-          <div className="streak pointer-events-none absolute inset-y-0 left-[-15%] w-[55%] -rotate-6 opacity-40 blur-2xl" />
-          <div className="section-shell relative grid items-center gap-12 lg:grid-cols-[.78fr_1.22fr] lg:gap-24">
-            <Reveal>
-              <p className="eyebrow text-[hsl(var(--accent))]">Sample testimonial</p>
-              <div className="mt-5 font-display text-6xl leading-none text-[hsl(var(--accent))]">&ldquo;</div>
-              <blockquote className="mt-[-8px] font-display text-3xl leading-[1.15] tracking-[-.01em] sm:text-4xl">The first time we walked back in, we both said the same thing: it feels like our house again.</blockquote>
-              <div className="mt-7 flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-xs font-bold text-[hsl(var(--accent-foreground))]">MC</span>
-                <div>
-                  <p className="text-sm font-bold">Maya &amp; Chris <span className="font-normal text-[hsl(var(--primary-foreground)/.5)]">(sample)</span></p>
-                  <p className="text-xs text-[hsl(var(--primary-foreground)/.55)]">Noe Valley &middot; recurring home care</p>
-                </div>
-              </div>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="bezel"><div className="bezel-inner bg-[hsl(var(--primary-foreground)/.06)] p-5 ring-1 ring-[hsl(var(--primary-foreground)/.14)] sm:p-7"><Clock3 className="text-[hsl(var(--accent))]" size={22} /><p className="mt-10 font-display text-4xl tracking-[-.01em]">1 day</p><p className="mt-2 text-xs leading-5 text-[hsl(var(--primary-foreground)/.6)]">Typical response time for a new quote.</p></div></div>
-                <div className="bezel"><div className="bezel-inner bg-[hsl(var(--primary-foreground)/.06)] p-5 ring-1 ring-[hsl(var(--primary-foreground)/.14)] sm:p-7"><CheckCircle2 className="text-[hsl(var(--accent))]" size={22} /><p className="mt-10 font-display text-4xl tracking-[-.01em]">4.9 / 5</p><p className="mt-2 text-xs leading-5 text-[hsl(var(--primary-foreground)/.6)]">From more than 240 local clients.</p></div></div>
-                <div className="col-span-2 bezel"><div className="bezel-inner bg-[hsl(var(--secondary))] p-5 sm:p-7"><p className="eyebrow text-[hsl(var(--secondary-foreground)/.55)]">Our coverage</p><div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium text-[hsl(var(--secondary-foreground))]"><span className="flex items-center gap-2"><MapPin size={16} className="text-[hsl(var(--accent))]" /> San Francisco</span><span className="text-[hsl(var(--secondary-foreground)/.3)]">/</span><span>Marin</span><span className="text-[hsl(var(--secondary-foreground)/.3)]">/</span><span>East Bay</span></div></div></div>
-              </div>
-            </Reveal>
-          </div>
-        </section>
-
-        {/* FAQ */}
-        <section id="faq" className="section-shell scroll-mt-24 py-24 sm:py-32">
-          <div className="grid gap-12 lg:grid-cols-[.75fr_1.25fr] lg:gap-24">
-            <Reveal>
-              <p className="eyebrow text-[hsl(var(--primary))]">Good to know</p>
-              <h2 className="mt-4 font-display text-5xl leading-[.98] tracking-[-.01em]">The questions<br />people ask.</h2>
-              <p className="mt-6 max-w-xs text-sm leading-6 text-[hsl(var(--muted-foreground))]">Still curious? We are happy to talk it through. That is what the quote form is for.</p>
-              <a href="#quote" className="mt-7 inline-flex items-center gap-2 text-sm font-bold text-[hsl(var(--primary))]" data-testid="link-faq-quote">Ask us directly <ArrowUpRight size={16} /></a>
-            </Reveal>
-            <Reveal delay={0.06} className="divide-y divide-[hsl(var(--border))] border-y border-[hsl(var(--border))]">
-              {FAQS.map(([question, answer]) => (
-                <details key={question} className="group py-5">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-5 text-base font-bold [&::-webkit-details-marker]:hidden" data-testid={`button-faq-${question.slice(0, 12).replaceAll(' ', '-').toLowerCase()}`}>
-                    {question}
-                    <ChevronDown size={19} className="shrink-0 text-[hsl(var(--primary))] transition-transform duration-300 group-open:rotate-180" />
-                  </summary>
-                  <p className="max-w-xl pt-3 pr-8 text-sm leading-6 text-[hsl(var(--muted-foreground))]">{answer}</p>
-                </details>
-              ))}
-            </Reveal>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="section-shell pb-20">
-          <Reveal>
-            <div className="grain relative overflow-hidden rounded-[26px] bg-[hsl(var(--accent))] px-7 py-12 sm:px-14 sm:py-16">
-              <div className="relative flex flex-col justify-between gap-9 md:flex-row md:items-end">
-                <div>
-                  <p className="eyebrow text-[hsl(var(--accent-foreground)/.6)]">Ready when you are</p>
-                  <h2 className="mt-4 max-w-xl font-display text-5xl leading-[.94] tracking-[-.01em] sm:text-6xl">A cleaner week starts here.</h2>
-                </div>
-                <a href="#quote" className="btn-primary focus-ring group inline-flex w-fit shrink-0 items-center gap-3 rounded-full bg-[hsl(var(--secondary))] py-3 pl-5 pr-2.5 text-sm font-bold text-[hsl(var(--secondary-foreground))]" data-testid="link-bottom-quote">
-                  Book a visit
-                  <span className="icon-chip flex h-8 w-8 items-center justify-center rounded-full bg-[hsl(var(--secondary-foreground)/.14)]"><ArrowUpRight size={16} /></span>
-                </a>
-              </div>
-            </div>
-          </Reveal>
-        </section>
-      </main>
-      <footer className="bg-[hsl(var(--secondary))] py-12 text-[hsl(var(--secondary-foreground))]">
-        <div className="section-shell">
-          <div className="flex flex-col justify-between gap-10 border-b border-[hsl(var(--secondary-foreground)/.13)] pb-10 sm:flex-row">
-            <div>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--accent))]"><Droplets size={18} /></span>
-                <span className="font-display text-[1.4rem] tracking-[-.02em]">Clearview<span className="text-[hsl(var(--accent))]">.</span></span>
-              </div>
-              <p className="mt-4 max-w-xs text-sm leading-6 text-[hsl(var(--secondary-foreground)/.55)]">Thoughtful cleaning for homes, teams, and the spaces in between.</p>
-            </div>
-            <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-[hsl(var(--secondary-foreground)/.68)]">
-              {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href} className="hover:text-[hsl(var(--accent))]" data-testid={`link-footer-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>{link.label}</a>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-col justify-between gap-3 pt-6 text-[11px] text-[hsl(var(--secondary-foreground)/.45)] sm:flex-row">
-            <span>&copy; 2026 Clearview Cleaning Co. All rights reserved.</span>
-            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <PhoneCall size={13} /> <a href="tel:+14155550184" className="hover:text-[hsl(var(--accent))]" data-testid="link-footer-phone">(415) 555-0184</a>
-              <span className="mx-1">&middot;</span>
-              <Mail size={13} /> <a href="mailto:hello@clearview.co" className="hover:text-[hsl(var(--accent))]" data-testid="link-footer-email">hello@clearview.co</a>
-            </span>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
+/* ─── Router ─── */
+function RoutedErrorBoundary({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
 function Router() {
@@ -620,11 +675,6 @@ function Router() {
       </Switch>
     </RoutedErrorBoundary>
   );
-}
-
-function RoutedErrorBoundary({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
 }
 
 function App() {

@@ -54,3 +54,6 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Reference/design source files — do not push
+New_UI_frontend/
