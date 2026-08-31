@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -27,58 +27,61 @@
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
 }
 
 :root {
-  --background: 42 44% 96%;
-  --foreground: 204 39% 17%;
-  --border: 42 19% 84%;
-  --input: 42 19% 80%;
-  --ring: 186 63% 38%;
-  --card: 42 44% 98%;
-  --card-foreground: 204 39% 17%;
-  --card-border: 42 22% 87%;
-  --primary: 186 63% 31%;
-  --primary-foreground: 42 44% 97%;
-  --secondary: 204 39% 17%;
-  --secondary-foreground: 42 44% 97%;
-  --muted: 39 20% 90%;
-  --muted-foreground: 203 19% 43%;
-  --accent: 19 83% 63%;
-  --accent-foreground: 204 39% 17%;
-  --destructive: 5 66% 45%;
-  --destructive-foreground: 42 44% 97%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Fraunces', Georgia, serif;
-  --app-font-mono: 'Space Mono', monospace;
-  --radius: 0.75rem;
-  --shadow-sm: 0 8px 18px rgba(28, 51, 61, 0.06);
-  --shadow-md: 0 18px 40px rgba(28, 51, 61, 0.1);
+  /* Porcelain mint background, deep forest ink text, sage-green primary, warm marigold accent */
+  --background: 150 22% 96%;
+  --foreground: 158 32% 12%;
+  --border: 150 16% 86%;
+  --input: 150 16% 80%;
+  --ring: 38 88% 55%;
+  --card: 150 25% 98%;
+  --card-foreground: 158 32% 12%;
+  --card-border: 150 18% 89%;
+  --primary: 156 42% 21%;
+  --primary-foreground: 150 30% 97%;
+  --secondary: 158 36% 10%;
+  --secondary-foreground: 150 30% 97%;
+  --muted: 150 16% 91%;
+  --muted-foreground: 158 13% 38%;
+  --accent: 38 88% 56%;
+  --accent-foreground: 158 32% 11%;
+  --destructive: 6 72% 46%;
+  --destructive-foreground: 150 30% 97%;
+  --app-font-sans: 'Plus Jakarta Sans', sans-serif;
+  --app-font-serif: 'Instrument Serif', Georgia, serif;
+  --app-font-mono: 'JetBrains Mono', monospace;
+  --radius: 1rem;
+  --shadow-color: 158 40% 14%;
+  --shadow-sm: 0 6px 16px hsl(var(--shadow-color) / 0.08);
+  --shadow-md: 0 22px 48px hsl(var(--shadow-color) / 0.14);
+  --shadow-lg: 0 36px 80px hsl(var(--shadow-color) / 0.20);
 }
 
 .dark {
-  --background: 204 39% 12%;
-  --foreground: 42 44% 96%;
-  --border: 204 25% 25%;
-  --input: 204 25% 28%;
-  --ring: 186 63% 48%;
-  --card: 204 35% 16%;
-  --card-foreground: 42 44% 96%;
-  --card-border: 204 25% 25%;
-  --primary: 186 63% 48%;
-  --primary-foreground: 204 39% 12%;
-  --secondary: 42 44% 96%;
-  --secondary-foreground: 204 39% 12%;
-  --muted: 204 25% 22%;
-  --muted-foreground: 42 16% 72%;
-  --accent: 19 83% 63%;
-  --accent-foreground: 204 39% 12%;
-  --destructive: 5 70% 58%;
-  --destructive-foreground: 204 39% 12%;
+  --background: 158 34% 8%;
+  --foreground: 150 25% 95%;
+  --border: 158 20% 20%;
+  --input: 158 20% 24%;
+  --ring: 38 88% 58%;
+  --card: 158 30% 11%;
+  --card-foreground: 150 25% 95%;
+  --card-border: 158 20% 20%;
+  --primary: 152 40% 55%;
+  --primary-foreground: 158 34% 9%;
+  --secondary: 150 25% 95%;
+  --secondary-foreground: 158 34% 9%;
+  --muted: 158 18% 17%;
+  --muted-foreground: 150 12% 68%;
+  --accent: 38 88% 58%;
+  --accent-foreground: 158 34% 9%;
+  --destructive: 6 70% 58%;
+  --destructive-foreground: 158 34% 9%;
 }
 
 @layer base {
@@ -86,26 +89,44 @@
   html { scroll-behavior: smooth; }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background-image: radial-gradient(rgba(20, 52, 70, 0.045) 0.7px, transparent 0.7px);
-    background-size: 7px 7px;
+    background-image: radial-gradient(hsl(var(--foreground) / 0.045) 0.7px, transparent 0.7px);
+    background-size: 8px 8px;
   }
-  ::selection { background: hsl(var(--accent)); color: hsl(var(--foreground)); }
+  ::selection { background: hsl(var(--accent) / .55); color: hsl(var(--foreground)); }
 }
 
 @layer utilities {
-  .font-display { font-family: var(--app-font-serif); }
+  .font-display { font-family: var(--app-font-serif); font-style: normal; }
+  .font-display-italic { font-family: var(--app-font-serif); font-style: italic; }
   .font-mono-ui { font-family: var(--app-font-mono); }
   .text-balance { text-wrap: balance; }
-  .section-shell { width: min(100% - 2.5rem, 1160px); margin-inline: auto; }
-  .eyebrow { font-family: var(--app-font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; }
-  .reveal { animation: reveal-up 0.7s cubic-bezier(.22,.75,.25,1) both; }
-  .reveal-delay-1 { animation-delay: 100ms; }
-  .reveal-delay-2 { animation-delay: 180ms; }
-  .reveal-delay-3 { animation-delay: 260ms; }
-  .reveal-delay-4 { animation-delay: 340ms; }
-  .lift { transition: transform 220ms ease, box-shadow 220ms ease; }
-  .lift:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); }
-  .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 3px; }
+  .text-pretty { text-wrap: pretty; }
+  .section-shell { width: min(100% - 2.5rem, 1180px); margin-inline: auto; }
+  .eyebrow { font-family: var(--app-font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent)); outline-offset: 3px; border-radius: 4px; }
+
+  /* Card lift with tinted shadow */
+  .lift { transition: transform 320ms cubic-bezier(.22,.75,.25,1), box-shadow 320ms cubic-bezier(.22,.75,.25,1); }
+  .lift:hover { transform: translateY(-6px); box-shadow: var(--shadow-md); }
+
+  /* Double-bezel: outer shell + inner core, concentric radii */
+  .bezel { padding: 0.4rem; border-radius: calc(var(--radius) + 12px); background: hsl(var(--foreground) / 0.05); }
+  .bezel-inner { border-radius: calc(var(--radius) + 6px); }
+
+  /* Button-in-button trailing icon */
+  .icon-chip { transition: transform 300ms cubic-bezier(.22,.75,.25,1); }
+  .btn-primary:hover .icon-chip,
+  .btn-ghost:hover .icon-chip { transform: translate(2px,-2px) scale(1.05); }
+  .btn-primary { transition: transform 260ms cubic-bezier(.22,.75,.25,1), background-color 260ms ease, box-shadow 260ms ease; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .btn-primary:active { transform: translateY(0) scale(.98); }
+
+  /* Glass surface for the floating nav / overlays */
+  .glass {
+    background: hsl(var(--card) / 0.72);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  }
 }
 
 .quote-field {
@@ -114,17 +135,8 @@
   caret-color: hsl(var(--primary));
   color-scheme: light;
 }
-
-.quote-field::placeholder {
-  color: hsl(var(--muted-foreground));
-  opacity: 1;
-}
-
-.quote-field:focus {
-  color: hsl(var(--foreground));
-  background-color: hsl(var(--background));
-}
-
+.quote-field::placeholder { color: hsl(var(--muted-foreground)); opacity: 1; }
+.quote-field:focus { color: hsl(var(--foreground)); background-color: hsl(var(--background)); }
 .quote-field:-webkit-autofill,
 .quote-field:-webkit-autofill:hover,
 .quote-field:-webkit-autofill:focus {
@@ -132,37 +144,47 @@
   -webkit-box-shadow: 0 0 0 1000px hsl(var(--background)) inset;
   caret-color: hsl(var(--foreground));
 }
+.dark .quote-field { color-scheme: dark; }
 
-.dark .quote-field {
-  color-scheme: dark;
+/* Signature motif: a wiped-clear streak of light cutting across a foggy surface.
+   Echoes the brand's core idea (Clearview) without relying on stock photography. */
+.streak {
+  background: linear-gradient(115deg,
+    transparent 38%,
+    hsl(var(--accent) / .5) 47%,
+    hsl(var(--accent) / .22) 53%,
+    transparent 64%);
+}
+.streak-soft {
+  background: linear-gradient(115deg,
+    transparent 30%,
+    hsl(var(--primary-foreground) / .16) 46%,
+    hsl(var(--primary-foreground) / .05) 55%,
+    transparent 68%);
 }
 
-.noise::after {
+/* Fine grain, applied only to fixed/absolute decorative layers */
+.grain::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.07;
+  opacity: 0.08;
   mix-blend-mode: soft-light;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
 }
 
-.window-grid {
-  background-image: linear-gradient(rgba(233, 242, 236, 0.17) 1px, transparent 1px), linear-gradient(90deg, rgba(233, 242, 236, 0.17) 1px, transparent 1px);
-  background-size: 46px 46px;
-}
-
-@keyframes reveal-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Fine droplet dot-grid — water, not windowpanes */
+.droplet-grid {
+  background-image: radial-gradient(hsl(var(--primary-foreground) / .16) 1px, transparent 1.4px);
+  background-size: 20px 20px;
 }
 
 @media (max-width: 640px) {
-  .section-shell { width: min(100% - 1.5rem, 1160px); }
+  .section-shell { width: min(100% - 1.5rem, 1180px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .reveal { animation: none; }
-  .lift { transition: none; }
+  .lift, .btn-primary, .icon-chip { transition: none; }
 }
