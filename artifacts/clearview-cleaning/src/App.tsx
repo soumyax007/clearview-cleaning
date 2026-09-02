@@ -723,6 +723,246 @@ function Footer() {
 }
 
 /* ─── Page: Home ─── */
+/* ─── Before / After slider ─── */
+const BA_PAIRS = [
+  {
+    label: 'Commercial — before & after janitorial service',
+    before: '/ba-commercial-before.jpg',
+    after:  '/ba-commercial-after.jpg',
+  },
+  {
+    label: 'Residential — before & after deep clean',
+    before: '/ba-residential-before.jpg',
+    after:  '/ba-residential-after.jpg',
+  },
+];
+
+function BeforeAfterSlide({ before, after, label }: { before: string; after: string; label: string }) {
+  const [pos, setPos] = useState(50);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+
+  const calcPos = useCallback((clientX: number) => {
+    const rect = wrapRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const pct = Math.min(Math.max(((clientX - rect.left) / rect.width) * 100, 1), 99);
+    setPos(pct);
+  }, []);
+
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    dragging.current = true;
+    (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    calcPos(e.clientX);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragging.current) return;
+    calcPos(e.clientX);
+  };
+
+  const onPointerUp = () => { dragging.current = false; };
+
+  return (
+    <div
+      ref={wrapRef}
+      className="ba-wrap"
+      style={{ '--ba-pos': `${pos}%` } as React.CSSProperties}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+      aria-label={label}
+    >
+      <img src={after} alt="After cleaning" className="ba-img ba-img-after" draggable={false} />
+      <img src={before} alt="Before cleaning" className="ba-img ba-img-before" draggable={false} />
+      <span className="ba-label ba-label-before">BEFORE</span>
+      <span className="ba-label ba-label-after">AFTER</span>
+      <div className="ba-handle" aria-hidden="true">
+        <div className="ba-knob">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M8 6l-6 6 6 6M16 6l6 6-6 6" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BeforeAfterSection() {
+  return (
+    <section className="ba-section" id="before-after">
+      <div className="wrap">
+        <div className="section-head reveal">
+          <h2>See the difference</h2>
+          <p>Drag the handle left or right to compare before and after. This is the standard we hold on every visit.</p>
+        </div>
+        <div className="ba-grid reveal">
+          {BA_PAIRS.map((pair) => (
+            <div key={pair.label}>
+              <p className="ba-pair-label">{pair.label}</p>
+              <BeforeAfterSlide {...pair} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Pricing ─── */
+type PricingMode = 'residential' | 'commercial';
+
+const PRICING: Record<PricingMode, { name: string; price: number; period: string; badge: string | null; desc: string; features: string[]; cta: string; featured: boolean }[]> = {
+  residential: [
+    {
+      name: 'Fresh Home',
+      price: 299,
+      period: 'per visit',
+      badge: null,
+      featured: false,
+      desc: 'Perfect for apartments and smaller homes that need a thorough regular clean.',
+      features: [
+        'Full home clean (up to 2,000 sq ft)',
+        'Kitchen & bathrooms deep scrub',
+        'Floor mopping & vacuuming',
+        'Interior window clean',
+        'One-time or monthly schedule',
+      ],
+      cta: 'Book Fresh Home',
+    },
+    {
+      name: 'Complete Care',
+      price: 399,
+      period: 'per visit',
+      badge: 'Most Popular',
+      featured: true,
+      desc: 'Our most comprehensive home bundle — interior, exterior, and everything between.',
+      features: [
+        'Everything in Fresh Home',
+        'Deep clean — all rooms',
+        'Interior + exterior windows',
+        'Carpet & upholstery extraction',
+        'Move-in / move-out ready',
+        'Priority scheduling',
+      ],
+      cta: 'Book Complete Care',
+    },
+  ],
+  commercial: [
+    {
+      name: 'Business Clean',
+      price: 399,
+      period: 'per service',
+      badge: null,
+      featured: false,
+      desc: 'For small offices and retail spaces that need dependable regular service.',
+      features: [
+        'Office janitorial (nightly or weekly)',
+        'Common areas & break rooms',
+        'Restroom deep clean',
+        'Trash & recycling service',
+        'Floor sweeping & mopping',
+      ],
+      cta: 'Get Business Quote',
+    },
+    {
+      name: 'Facility Pro',
+      price: 549,
+      period: 'per service',
+      badge: 'Best Value',
+      featured: true,
+      desc: 'Full-service for larger commercial spaces with a dedicated crew and account manager.',
+      features: [
+        'Everything in Business Clean',
+        'Window cleaning (interior + exterior)',
+        'Floor stripping, waxing & buffing',
+        'Carpet & tile deep extraction',
+        'Janitorial supply restocking',
+        'Dedicated account manager',
+      ],
+      cta: 'Get Facility Quote',
+    },
+  ],
+};
+
+function PricingSection() {
+  const [mode, setMode] = useState<PricingMode>('residential');
+
+  return (
+    <section className="pricing-section" id="pricing">
+      <div className="wrap">
+        <div className="pricing-head reveal">
+          <p className="pricing-eyebrow">Simple, transparent pricing</p>
+          <h2>Pick the plan that fits your space.</h2>
+          <p className="pricing-sub">No hidden fees. No vague "starting at" quotes. Adjust any time.</p>
+
+          <div className="pricing-toggle-wrap">
+            <div className="pricing-toggle" role="group" aria-label="Choose pricing type">
+              <div
+                className="pricing-toggle-pill"
+                style={{ transform: mode === 'commercial' ? 'translateX(100%)' : 'translateX(0)' }}
+              />
+              <button
+                type="button"
+                className={`pricing-toggle-btn${mode === 'residential' ? ' active' : ''}`}
+                onClick={() => setMode('residential')}
+                data-testid="button-pricing-residential"
+              >
+                🏠 Residential
+              </button>
+              <button
+                type="button"
+                className={`pricing-toggle-btn${mode === 'commercial' ? ' active' : ''}`}
+                onClick={() => setMode('commercial')}
+                data-testid="button-pricing-commercial"
+              >
+                🏢 Commercial
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div key={mode} className="pricing-cards pricing-cards-anim">
+          {PRICING[mode].map((plan) => (
+            <div key={plan.name} className={`pricing-card${plan.featured ? ' pricing-card-featured' : ''}`}>
+              {plan.badge && <span className="pricing-badge">{plan.badge}</span>}
+              <p className="pricing-name">{plan.name}</p>
+              <p className="pricing-desc">{plan.desc}</p>
+              <div className="pricing-price">
+                <span className="pricing-currency">$</span>
+                <span className="pricing-amount">{plan.price}</span>
+                <span className="pricing-period">{plan.period}</span>
+              </div>
+              <ul className="pricing-features">
+                {plan.features.map((f) => (
+                  <li key={f}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5" /></svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <a
+                href="#contact"
+                className={`btn ${plan.featured ? 'btn-gold' : 'btn-solid'} pricing-cta`}
+                data-testid={`link-pricing-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                {plan.cta}
+              </a>
+              {!plan.featured && (
+                <p className="pricing-note">Custom quotes available for larger spaces.</p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <p className="pricing-footer-note reveal">
+          All plans include a free walkthrough before we quote. Prices are starting points — your exact quote depends on space size and frequency.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 function Home() {
   useReveal();
 
@@ -736,7 +976,9 @@ function Home() {
         <Hero />
         <TrustStrip />
         <About />
+        <BeforeAfterSection />
         <Services />
+        <PricingSection />
         <CtaBand />
         <Testimonials />
         <Contact />
