@@ -687,7 +687,7 @@ function Contact() {
             ))}
           </div>
         </div>
-        <div className="reveal">
+        <div className="contact-form-wrap reveal">
           <QuoteForm />
         </div>
       </div>
