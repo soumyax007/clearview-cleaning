@@ -2,23 +2,94 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>Clearview Cleaning Co.</title>
-    <meta name="description" content="Clearview Cleaning Co. — built on Replit. Update this description to reflect the app." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Primary SEO -->
+    <title>Clearview Cleaning Co. | Professional Cleaning Services — Bay Area, CA</title>
+    <meta name="description" content="Clearview Cleaning Co. provides professional home and commercial cleaning services across the San Francisco Bay Area. Request a free quote — no hidden fees, fully bonded local crew since 2011." />
+    <meta name="keywords" content="cleaning service Bay Area, house cleaning San Francisco, commercial cleaning Oakland, janitorial service Marin, deep cleaning, window cleaning, move-in cleaning" />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Clearview Cleaning Co." />
-    <meta property="og:description" content="Clearview Cleaning Co. — built on Replit. Update this description to reflect the app." />
+    <meta name="theme-color" content="#0C1B2E" />
+    <link rel="canonical" href="https://clearview-cleaning.vercel.app/" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://clearview-cleaning.vercel.app/" />
+    <meta property="og:title" content="Clearview Cleaning Co. | Professional Cleaning — Bay Area, CA" />
+    <meta property="og:description" content="Professional home and commercial cleaning across the San Francisco Bay Area. Bonded, insured, no hidden fees. Request a free quote." />
+    <meta property="og:image" content="https://clearview-cleaning.vercel.app/hero-bg.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:site_name" content="Clearview Cleaning Co." />
+
+    <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Clearview Cleaning Co." />
-    <meta name="twitter:description" content="Clearview Cleaning Co. — built on Replit. Update this description to reflect the app." />
+    <meta name="twitter:title" content="Clearview Cleaning Co. | Professional Cleaning — Bay Area, CA" />
+    <meta name="twitter:description" content="Professional home and commercial cleaning across the San Francisco Bay Area. Bonded, insured, no hidden fees." />
+    <meta name="twitter:image" content="https://clearview-cleaning.vercel.app/hero-bg.jpg" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Preload LCP hero image so Lighthouse can discover it immediately -->
+    <link rel="preload" as="image" href="/hero-bg.jpg" fetchpriority="high" />
+
+    <!-- Google Fonts: Fraunces (headings) + Inter (body) with font-display=swap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- LocalBusiness Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "@id": "https://clearview-cleaning.vercel.app/",
+      "name": "Clearview Cleaning Co.",
+      "description": "Professional home and commercial cleaning services across the San Francisco Bay Area. Janitorial, deep cleaning, window cleaning, and move-in/move-out services since 2011.",
+      "url": "https://clearview-cleaning.vercel.app/",
+      "telephone": "+14155550184",
+      "email": "hello@clearview.co",
+      "foundingDate": "2011",
+      "priceRange": "$$",
+      "image": "https://clearview-cleaning.vercel.app/hero-bg.jpg",
+      "address": {
+        "@type": "PostalAddress",
+        "addressRegion": "CA",
+        "addressCountry": "US"
+      },
+      "areaServed": [
+        { "@type": "City", "name": "San Francisco" },
+        { "@type": "City", "name": "Oakland" },
+        { "@type": "City", "name": "Marin County" }
+      ],
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+        "opens": "08:00",
+        "closes": "18:00"
+      },
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Cleaning Services",
+        "itemListElement": [
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Fresh Home Package", "description": "Full home clean up to 2,000 sq ft" }, "price": "299", "priceCurrency": "USD" },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Complete Care Package", "description": "Comprehensive home bundle with deep clean and exterior windows" }, "price": "399", "priceCurrency": "USD" },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Business Clean Package", "description": "Office janitorial for small offices and retail spaces" }, "price": "399", "priceCurrency": "USD" },
+          { "@type": "Offer", "itemOffered": { "@type": "Service", "name": "Facility Pro Package", "description": "Full-service commercial cleaning with dedicated account manager" }, "price": "549", "priceCurrency": "USD" }
+        ]
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
+

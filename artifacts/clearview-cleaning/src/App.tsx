@@ -202,10 +202,15 @@ function Hero() {
 
   return (
     <section className="hero" id="top" ref={heroRef}>
-      <div
-        ref={bgRef}
+      <img
+        ref={bgRef as React.RefObject<HTMLImageElement>}
+        src="/hero-bg.jpg"
+        alt="Professional cleaning crew at work in a spotless Bay Area home"
         className="hero-bg"
-        style={{ backgroundImage: "url('/hero-bg.jpg')" }}
+        width="1920"
+        height="1080"
+        fetchPriority="high"
+        decoding="async"
       />
       <div className="hero-scrim" />
       <div className="wrap hero-inner">
