@@ -382,7 +382,7 @@ function V2Hero() {
     window.addEventListener('scroll', onScroll, { passive: true }); return () => window.removeEventListener('scroll', onScroll);
   }, []);
   return (
-    <section className="hero" id="top" ref={heroRef}>
+    <section className="hero v2-hero" id="top" ref={heroRef}>
       <img ref={bgRef as React.RefObject<HTMLImageElement>} src="/hero-v2.jpg" alt="Professional cleaner at work in a modern Bay Area space" className="hero-bg" width="1920" height="1080" fetchPriority="high" decoding="async" />
       <div className="hero-scrim" />
       <div className="hero-float-badges" aria-hidden="true">

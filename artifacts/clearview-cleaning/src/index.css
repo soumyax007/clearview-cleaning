@@ -122,8 +122,13 @@ nav.primary-nav a:hover::after{width:100%;}
 
 /* ─── Hero ─── */
 .hero{min-height:100vh;display:flex;align-items:flex-end;position:relative;overflow:hidden;color:#fff;padding-bottom:96px;}
+.v2-hero{align-items:center;padding-bottom:0;}
 .hero-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;transform:scale(1.08);will-change:transform;}
+.v2-hero .hero-bg{object-position: 85% center;} /* Keeps cleaner visible on the right */
+
 .hero-scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,rgba(0,0,0,0.45) 35%,rgba(0,0,0,0.92) 100%);}
+.v2-hero .hero-scrim{background:linear-gradient(90deg, rgba(14,14,14,0.95) 0%, rgba(14,14,14,0.85) 30%, rgba(14,14,14,0.4) 60%, rgba(14,14,14,0) 100%);}
+
 .hero-inner{position:relative;z-index:2;max-width:760px;}
 /* V2 tag — gold pill */
 .hero-tag{display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:700;letter-spacing:.03em;color:#111;background:var(--gold);padding:8px 18px;border-radius:999px;margin-bottom:22px;}
@@ -146,7 +151,11 @@ nav.primary-nav a:hover::after{width:100%;}
 .hero-float-badges{position:absolute;z-index:3;display:flex;flex-direction:column;gap:14px;right:6%;bottom:14%;pointer-events:none;}
 .hero-float-badge{pointer-events:auto;background:rgba(255,255,255,0.96);color:#111;border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;box-shadow:0 16px 34px -14px rgba(0,0,0,0.5);}
 .hero-float-badge svg{width:18px;height:18px;color:var(--gold-deep);flex-shrink:0;}
-@media(max-width:760px){.hero-float-badges{display:none;}}
+@media(max-width:760px){
+  .hero-float-badges{display:none;}
+  .v2-hero .hero-bg { object-position: 78% center; }
+  .v2-hero .hero-scrim { background: linear-gradient(180deg, rgba(14,14,14,0.4) 0%, rgba(14,14,14,0.85) 40%, rgba(14,14,14,0.98) 100%); }
+}
 
 /* ─── Trust strip ─── */
 .trust-strip{background:var(--navy-deep);padding:16px 0;}
