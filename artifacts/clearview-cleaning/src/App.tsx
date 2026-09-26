@@ -383,7 +383,7 @@ function V2Hero() {
   }, []);
   return (
     <section className="hero" id="top" ref={heroRef}>
-      <img ref={bgRef as React.RefObject<HTMLImageElement>} src="/hero-bg.jpg" alt="Professional cleaning crew at work in a spotless Bay Area home" className="hero-bg" width="1920" height="1080" fetchPriority="high" decoding="async" />
+      <img ref={bgRef as React.RefObject<HTMLImageElement>} src="/hero-v2.jpg" alt="Professional cleaner at work in a modern Bay Area space" className="hero-bg" width="1920" height="1080" fetchPriority="high" decoding="async" />
       <div className="hero-scrim" />
       <div className="hero-float-badges" aria-hidden="true">
         <div className="hero-float-badge hero-fade-up d3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" /></svg>100% Satisfaction Guaranteed</div>
@@ -602,7 +602,6 @@ function HomeV2() {
         <WhyChooseUs />
         <TeamSection />
         <V2TrustStrip />
-        <V2BeforeAfterSection />
         <PricingSection />
         <V2Testimonials />
         <V2Contact />
@@ -847,7 +846,7 @@ function ClassicFooter() {
 function HomeClassic() {
   useRevealClassic();
   return (
-    <div id="top" className="overflow-hidden">
+    <div id="top" className="overflow-hidden theme-classic">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded focus:bg-amber-400 focus:px-4 focus:py-2 focus:text-sm focus:font-bold">Skip to content</a>
       <ClassicHeader />
       <main id="main">
@@ -946,7 +945,18 @@ function Home() {
   const handleSwitch = () => {
     setFading(true);
     setTimeout(() => {
-      setTheme((prev) => (prev === 'v2' ? 'classic' : 'v2'));
+      setTheme((prev) => {
+        const next = prev === 'v2' ? 'classic' : 'v2';
+        // Apply/remove theme class on <html> so fixed-position header inherits correct vars
+        if (next === 'classic') {
+          document.documentElement.classList.add('theme-classic');
+          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#12263F');
+        } else {
+          document.documentElement.classList.remove('theme-classic');
+          document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#000000');
+        }
+        return next;
+      });
       window.scrollTo({ top: 0, behavior: 'instant' });
       // Re-trigger reveal animations for new theme
       document.querySelectorAll<HTMLElement>('.reveal, .reveal-soft').forEach((el) => el.classList.remove('is-visible'));
