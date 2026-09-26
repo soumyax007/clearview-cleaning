@@ -77,8 +77,8 @@ function useReveal() {
 /* ─── Header ─── */
 const NAV_LINKS = [
   { href: '#top', label: 'Home' },
-  { href: '#about', label: 'About' },
   { href: '#services', label: 'Services' },
+  { href: '#pricing', label: 'Pricing' },
   { href: '#reviews', label: 'Reviews' },
   { href: '#contact', label: 'Contact' },
 ];
@@ -147,7 +147,7 @@ function Header() {
           </nav>
 
           <div className="header-actions">
-            <a href="#contact" className="btn btn-outline-light" data-testid="link-header-quote">
+            <a href="#contact" className="btn btn-nav-quote" data-testid="link-header-quote">
               Request a Quote
             </a>
             <button
@@ -263,41 +263,12 @@ function TrustStrip() {
   );
 }
 
-/* ─── About ─── */
-function About() {
-  return (
-    <section className="about" id="about">
-      <div className="wrap about-grid">
-        <div className="about-text reveal">
-          <h2>A decade of keeping Bay Area spaces looking the way they should.</h2>
-          <p><strong>Clearview Cleaning Co.</strong> is a local, family-owned business — we've been caring for homes and commercial buildings across the Bay Area since 2011.</p>
-          <p>We build every service around the space itself: nothing is a one-size-fits-all routine, and nothing gets rushed. Our crews use professional-grade equipment and eco-conscious supplies chosen for the surfaces we're actually working on.</p>
-          <p>From nightly janitorial rounds to deep resets and move-out cleans, we show up on time, do the work with care, and leave the space ready for what's next.</p>
-          <p>Call us for a free walkthrough before we ever quote a price.</p>
-          <a href="#contact" className="btn btn-solid" style={{ marginTop: '8px' }} data-testid="link-about-quote">Request a Quote</a>
-        </div>
-        <div className="about-badge-wrap reveal">
-          <svg className="waves-bg" viewBox="0 0 200 200" aria-hidden="true">
-            <circle cx="100" cy="100" r="98" fill="none" stroke="#4C88AC" strokeWidth="1" strokeDasharray="2 6" />
-          </svg>
-          <LogoBadge size={260} />
-        </div>
-      </div>
-    </section>
-  );
-}
-
 /* ─── Services ─── */
 const SERVICES = [
-  { img: 'https://images.unsplash.com/photo-1627905646269-7f034dcc5738?auto=format&fit=crop&w=800&q=75', alt: 'Cleaner wiping down an office desk', title: 'Recurring Home Care', desc: 'Steady, attentive maintenance for the rooms your family actually lives in.' },
-  { img: 'https://images.unsplash.com/photo-1437326300822-01d8f13c024f?auto=format&fit=crop&w=800&q=75', alt: 'Janitor mopping a hard floor', title: 'Floor Care', desc: 'Stripping, waxing, and buffing for hard-surface floors that see heavy foot traffic.' },
+  { img: 'https://images.unsplash.com/photo-1627905646269-7f034dcc5738?auto=format&fit=crop&w=800&q=75', alt: 'Cleaner wiping down an office desk', title: 'Home Care', desc: 'Steady, attentive maintenance for the rooms your family actually lives in — on your schedule, without disruption.' },
   { img: 'https://images.unsplash.com/photo-1482449609509-eae2a7ea42b7?auto=format&fit=crop&w=800&q=75', alt: 'Technician cleaning exterior glass', title: 'Window Cleaning', desc: 'Interior and exterior glass, done streak-free from the lobby door to the top floor.' },
-  { img: 'https://images.unsplash.com/photo-1669101602124-f5b78895d91c?auto=format&fit=crop&w=800&q=75', alt: 'Worker mopping a sterile clean room', title: 'Deep Cleans & Resets', desc: 'For the moments that need more than a maintenance visit.' },
-  { img: 'https://images.unsplash.com/photo-1716703373229-b0e43de7dd5c?auto=format&fit=crop&w=800&q=75', alt: 'Open-plan office space', title: 'Office & Workplace', desc: 'Full-service care for open-plan floors, private offices, and everything in between.' },
-  { img: 'https://images.unsplash.com/photo-1740657254989-42fe9c3b8cce?auto=format&fit=crop&w=800&q=75', alt: 'Cleaner scrubbing a tile floor', title: 'Tile & Grout Cleaning', desc: 'Deep extraction that lifts ground-in dirt without damaging the grout line.' },
-  { img: 'https://images.unsplash.com/photo-1686178827149-6d55c72d81df?auto=format&fit=crop&w=800&q=75', alt: 'Vacuuming upholstered office furniture', title: 'Carpet & Upholstery', desc: 'Hot-water extraction for carpet, rugs, and office furniture.' },
-  { img: 'https://images.unsplash.com/photo-1580256081112-e49377338b7f?auto=format&fit=crop&w=800&q=75', alt: 'Janitorial supply cart', title: 'Move-in / Move-out', desc: 'A fresh beginning, handled with care and a detailed finish.' },
-  { img: 'https://images.unsplash.com/photo-1718152521364-b9655b8a7926?auto=format&fit=crop&w=800&q=75', alt: 'Power washing an outdoor walkway', title: 'Power Washing', desc: 'Pressure washing for entries, walkways, and outdoor areas.' },
+  { img: 'https://images.unsplash.com/photo-1716703373229-b0e43de7dd5c?auto=format&fit=crop&w=800&q=75', alt: 'Open-plan office space', title: 'Office & Workplace', desc: 'Full-service care for open-plan floors, private offices, common areas, and everything in between.' },
+  { img: 'https://images.unsplash.com/photo-1718152521364-b9655b8a7926?auto=format&fit=crop&w=800&q=75', alt: 'Power washing an outdoor walkway', title: 'Power Washing', desc: 'Pressure washing for entries, walkways, and outdoor areas — restoring surfaces to their original condition.' },
 ];
 
 function Services() {
@@ -314,9 +285,11 @@ function Services() {
               <div className="service-media">
                 <img loading="lazy" src={s.img} alt={s.alt} />
               </div>
-              <div className="service-accent" />
-              <h3>{s.title}</h3>
-              <p>{s.desc}</p>
+              <div className="service-card-body">
+                <div className="service-accent" />
+                <h3>{s.title}</h3>
+                <p>{s.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -325,52 +298,6 @@ function Services() {
   );
 }
 
-/* ─── CTA Band ─── */
-function CtaBand() {
-  return (
-    <section className="cta-band">
-      <div className="wave-top" aria-hidden="true">
-        <svg viewBox="0 0 1200 70" preserveAspectRatio="none">
-          <path d="M0,35 C150,70 350,0 600,35 C850,70 1050,0 1200,35 L1200,70 L0,70 Z" fill="var(--navy)" />
-        </svg>
-      </div>
-      <div className="wrap cta-inner">
-        <p className="cta-quote reveal">&ldquo;We maintain quality services at a price you can afford.&rdquo;</p>
-        <p className="cta-attr reveal">— Clearview Cleaning Co. —</p>
-        <a href="#contact" className="btn btn-gold reveal" data-testid="link-cta-quote">Request a Quote</a>
-        <p className="cta-blurb reveal" style={{ marginTop: '34px' }}>
-          Clearview Cleaning Co. is a local, family-owned business. We've been serving the Bay Area for more than a decade.
-        </p>
-        <div className="cta-info-grid reveal-group">
-          {[
-            { title: 'Business Hours', content: 'Monday – Friday\n8:00am – 6:00pm' },
-            { title: 'Phone & Email', content: '(415) 555-0184\nhello@clearview.co', links: ['tel:+14155550184', 'mailto:hello@clearview.co'] },
-            { title: 'Insured & Bonded', content: 'Fully licensed and\nbonded for your peace of mind.' },
-            { title: 'Service Area', content: 'San Francisco\nMarin · East Bay' },
-          ].map(({ title, content, links }, i) => (
-            <div key={title} className="col reveal" style={{ '--i': i } as React.CSSProperties}>
-              <h4>{title}</h4>
-              {links ? (
-                <p>
-                  {content.split('\n').map((line, j) => (
-                    <span key={j}>{j > 0 && <br />}<a href={links[j] ?? '#'}>{line}</a></span>
-                  ))}
-                </p>
-              ) : (
-                <p>{content.split('\n').map((line, j) => <span key={j}>{j > 0 && <br />}{line}</span>)}</p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="wave-bottom" aria-hidden="true">
-        <svg viewBox="0 0 1200 70" preserveAspectRatio="none">
-          <path d="M0,35 C150,0 350,70 600,35 C850,0 1050,70 1200,35 L1200,0 L0,0 Z" fill="var(--paper)" />
-        </svg>
-      </div>
-    </section>
-  );
-}
 
 /* ─── Testimonial carousel ─── */
 const REVIEWS = [
@@ -559,7 +486,7 @@ function QuoteForm() {
           onClick={() => setMode('residential')}
           data-testid="button-quote-residential"
         >
-          🏠 Home
+          Home
         </button>
         <button
           type="button"
@@ -567,7 +494,7 @@ function QuoteForm() {
           onClick={() => setMode('commercial')}
           data-testid="button-quote-commercial"
         >
-          🏢 Business
+          Business
         </button>
       </div>
 
@@ -913,7 +840,7 @@ function PricingSection() {
                 onClick={() => setMode('residential')}
                 data-testid="button-pricing-residential"
               >
-                🏠 Residential
+                Residential
               </button>
               <button
                 type="button"
@@ -921,7 +848,7 @@ function PricingSection() {
                 onClick={() => setMode('commercial')}
                 data-testid="button-pricing-commercial"
               >
-                🏢 Commercial
+                Commercial
               </button>
             </div>
           </div>
@@ -980,11 +907,9 @@ function Home() {
       <main id="main">
         <Hero />
         <TrustStrip />
-        <About />
         <BeforeAfterSection />
         <Services />
         <PricingSection />
-        <CtaBand />
         <Testimonials />
         <Contact />
       </main>
